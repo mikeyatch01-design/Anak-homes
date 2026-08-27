@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Runs before the rest of <head> so a locked device redirects to the
+  // login screen immediately, instead of flashing real content first.
+  try {
+    if (localStorage.getItem('urbanhomes-auth-v1') && sessionStorage.getItem('urbanhomes-unlocked') !== 'true') {
+      var here = location.pathname.split('/').pop() || 'index.html';
+      location.replace('login.html?next=' + encodeURIComponent(here));
+    }
+  } catch (e) {}
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anak Homes — Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+  <span></span><span></span><span></span>
+</button>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-collapse-toggle" id="sidebarCollapseToggle" aria-label="Collapse sidebar" title="Collapse sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
+    </button>
+
+    <div class="logo">
+      <svg class="logo-house" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 11.5 12 4l9 7.5"/>
+        <path d="M5.5 10v9a1 1 0 0 0 1 1H10v-5.5h4V20h3.5a1 1 0 0 0 1-1v-9"/>
+      </svg>
+      <span class="logo-text">Anak Homes</span>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html" class="nav-item" title="Finances">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span class="nav-label">Finances</span>
+      </a>
+      <a href="bookings.html" class="nav-item" title="Bookings">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 0 1 4 4L7 21l-4 1 1-4Z"/><path d="m14.5 5.5 4 4"/></svg>
+        <span class="nav-label">Bookings</span>
+      </a>
+      <a href="host.html" class="nav-item" title="Host">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+        <span class="nav-label">Host</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="nav-bottom">
+        <a href="settings.html" class="nav-item active" title="Settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+          <span class="nav-label">Settings</span>
+        </a>
+        <a href="#" class="nav-item" id="signOutLink" title="Sign Out">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M18.4 6.6a8 8 0 1 1-12.8 0"/></svg>
+          <span class="nav-label">Sign Out</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Settings</h1>
+        <p class="welcome">Your profile, appearance, security and data</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="theme-toggle" id="themeToggle" role="button" aria-label="Toggle theme">
+          <span class="sun">☀</span>
+          <span class="dot"></span>
+          <span class="moon">☾</span>
+        </div>
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">M</div>
+          <span id="userName">Mike</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="settings-grid">
+
+      <!-- Profile -->
+      <div class="card settings-card">
+        <h2 class="settings-card-title">Profile</h2>
+        <p class="settings-card-desc">Your name, shown across the sidebar and greeting.</p>
+        <form id="profileForm">
+          <div class="form-row">
+            <label>Display name
+              <input type="text" id="fProfileName" required maxlength="40">
+            </label>
+          </div>
+          <div class="form-actions-inline">
+            <button type="submit" class="btn-primary">Save name</button>
+            <span class="settings-saved" id="profileSaved"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Appearance -->
+      <div class="card settings-card">
+        <h2 class="settings-card-title">Appearance</h2>
+        <p class="settings-card-desc">Choose how the dashboard looks on this device.</p>
+        <div class="theme-options" id="themeOptions">
+          <button type="button" class="theme-option" data-theme="light">☀ Light</button>
+          <button type="button" class="theme-option" data-theme="dark">☾ Dark</button>
+          <button type="button" class="theme-option" data-theme="system">🖥 System</button>
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="card settings-card settings-card-wide">
+        <div class="settings-card-header">
+          <h2 class="settings-card-title">Security</h2>
+          <span class="security-status" id="securityStatus"></span>
+        </div>
+        <p class="settings-card-desc">
+          A local password lock for this browser — a stopgap until real accounts and a login
+          page are built. It's hashed and never stored as plain text, but this is client-side
+          only: anyone with developer-tools access to this device could still bypass it, so
+          don't rely on it as strong security.
+        </p>
+        <form id="passwordForm">
+          <div class="form-row" id="currentPassRow" hidden>
+            <label>Current password
+              <input type="password" id="fCurrentPass" autocomplete="current-password">
+            </label>
+          </div>
+          <div class="form-row two-col">
+            <label>New password
+              <input type="password" id="fNewPass" required minlength="6" autocomplete="new-password">
+            </label>
+            <label>Confirm password
+              <input type="password" id="fConfirmPass" required minlength="6" autocomplete="new-password">
+            </label>
+          </div>
+          <div class="security-error" id="securityError"></div>
+          <div class="form-actions-inline">
+            <button type="submit" class="btn-primary" id="passwordSubmitBtn">Set password</button>
+            <button type="button" class="btn-secondary" id="removePassBtn" hidden>Remove lock</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Data -->
+      <div class="card settings-card settings-card-wide">
+        <h2 class="settings-card-title">Data</h2>
+        <p class="settings-card-desc">
+          Everything on this dashboard — bookings, hosts, profile — lives in this browser only,
+          there's no server yet. Export a backup before clearing your browser data or switching
+          devices, or export to Excel to share your bookings with someone else.
+        </p>
+        <div class="form-actions-inline">
+          <select class="export-month-select" id="exportMonthSelect" aria-label="Month to export"></select>
+          <button type="button" class="btn-secondary" id="exportExcelBtn">Export to Excel (.xlsx)</button>
+          <button type="button" class="btn-secondary" id="exportDataBtn">Export data (.json)</button>
+          <label class="btn-secondary file-btn" for="importDataInput">
+            Import data
+            <input type="file" id="importDataInput" accept="application/json" hidden>
+          </label>
+          <button type="button" class="btn-secondary btn-danger" id="resetDataBtn">Reset to sample data</button>
+        </div>
+        <div class="settings-note" id="dataNote"></div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- Recovery code, shown once right after a password is set -->
+<div class="modal-overlay" id="recoveryModalOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>Save your recovery code</h2>
+    </div>
+    <p class="settings-card-desc">
+      If you ever forget your password, this code is the only way back in — it will
+      <strong>not</strong> be shown again. Write it down or save it somewhere safe now.
+    </p>
+    <div class="recovery-code-display" id="recoveryCodeDisplay"></div>
+    <div class="form-actions-inline">
+      <button type="button" class="btn-secondary" id="copyRecoveryBtn">Copy code</button>
+    </div>
+    <label class="recovery-confirm">
+      <input type="checkbox" id="recoverySavedCheck">
+      I've saved this somewhere safe
+    </label>
+    <div class="form-actions">
+      <button type="button" class="btn-primary" id="recoveryModalDone" disabled>Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="xlsx.mini.min.js"></script>
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

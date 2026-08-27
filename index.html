@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Runs before the rest of <head> so a locked device redirects to the
+  // login screen immediately, instead of flashing real content first.
+  try {
+    if (localStorage.getItem('urbanhomes-auth-v1') && sessionStorage.getItem('urbanhomes-unlocked') !== 'true') {
+      var here = location.pathname.split('/').pop() || 'index.html';
+      location.replace('login.html?next=' + encodeURIComponent(here));
+    }
+  } catch (e) {}
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anak Homes Analytics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+  <span></span><span></span><span></span>
+</button>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-collapse-toggle" id="sidebarCollapseToggle" aria-label="Collapse sidebar" title="Collapse sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
+    </button>
+
+    <div class="logo">
+      <svg class="logo-house" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 11.5 12 4l9 7.5"/>
+        <path d="M5.5 10v9a1 1 0 0 0 1 1H10v-5.5h4V20h3.5a1 1 0 0 0 1-1v-9"/>
+      </svg>
+      <span class="logo-text">Anak Homes</span>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html" class="nav-item active" title="Finances">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span class="nav-label">Finances</span>
+      </a>
+      <a href="bookings.html" class="nav-item" title="Bookings">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 0 1 4 4L7 21l-4 1 1-4Z"/><path d="m14.5 5.5 4 4"/></svg>
+        <span class="nav-label">Bookings</span>
+      </a>
+      <a href="host.html" class="nav-item" title="Host">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+        <span class="nav-label">Host</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="nav-bottom">
+        <a href="settings.html" class="nav-item" title="Settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+          <span class="nav-label">Settings</span>
+        </a>
+        <a href="#" class="nav-item" id="signOutLink" title="Sign Out">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M18.4 6.6a8 8 0 1 1-12.8 0"/></svg>
+          <span class="nav-label">Sign Out</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Analytics</h1>
+        <p class="welcome" id="welcomeText">Welcome back, Mike</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="theme-toggle" id="themeToggle" role="button" aria-label="Toggle theme">
+          <span class="sun">☀</span>
+          <span class="dot"></span>
+          <span class="moon">☾</span>
+        </div>
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">M</div>
+          <span id="userName">Mike</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top financial summary -->
+    <section class="summary-grid">
+      <div class="card summary-card">
+        <div class="summary-label">Net Income</div>
+        <div class="summary-value" id="netIncomeValue">—</div>
+        <div class="delta" id="netIncomeDelta"></div>
+      </div>
+      <div class="card summary-card">
+        <div class="summary-label">Current Balance</div>
+        <div class="summary-value" id="currentBalanceValue">—</div>
+        <div class="delta" id="currentBalanceDelta"></div>
+      </div>
+      <div class="card summary-card">
+        <div class="summary-label">Total Received</div>
+        <div class="summary-value" id="totalReceivedValue">—</div>
+        <div class="delta" id="totalReceivedDelta"></div>
+      </div>
+    </section>
+
+    <!-- KPI stat cards -->
+    <section class="stats-grid">
+      <div class="card stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Bookings</span>
+          <span class="stat-icon">📅</span>
+        </div>
+        <div class="stat-value" id="bookingsCountValue">—</div>
+        <div class="delta" id="bookingsCountDelta"></div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Checked in</span>
+          <span class="stat-icon">✓</span>
+        </div>
+        <div class="stat-value" id="checkedInValue">—</div>
+        <div class="delta" id="checkedInDelta"></div>
+      </div>
+
+      <div class="card stat-card donut-card">
+        <div class="stat-top">
+          <span class="stat-label">Paid bookings</span>
+        </div>
+        <div class="donut-wrap">
+          <canvas class="donut" id="donutBookings" width="148" height="148"></canvas>
+          <div class="donut-center">
+            <span class="donut-total" id="paidDonutTotal">—</span>
+            <span class="donut-sub">Full paid</span>
+          </div>
+        </div>
+        <ul class="legend">
+          <li><span class="dot" style="background:#3B82F6"></span>Full paid <b id="paidLegendFullPct">—</b></li>
+          <li><span class="dot" style="background:#F5B942"></span>Half paid <b id="paidLegendHalfPct">—</b></li>
+        </ul>
+      </div>
+
+      <div class="card stat-card donut-card">
+        <div class="stat-top">
+          <span class="stat-label">Unpaid bookings</span>
+        </div>
+        <div class="donut-wrap">
+          <canvas class="donut" id="donutUnpaid" width="148" height="148"></canvas>
+          <div class="donut-center">
+            <span class="donut-total" id="unpaidDonutTotal">—</span>
+            <span class="donut-sub">Half paid</span>
+          </div>
+        </div>
+        <ul class="legend">
+          <li><span class="dot" style="background:#3B82F6"></span>Full paid <b id="unpaidLegendFullPct">—</b></li>
+          <li><span class="dot" style="background:#F5B942"></span>Half paid <b id="unpaidLegendHalfPct">—</b></li>
+        </ul>
+        <div class="donut-footnote" id="unpaidFootnote">—</div>
+      </div>
+
+    </section>
+
+    <!-- Charts row -->
+    <section class="charts-grid">
+      <div class="card table-card area-sales">
+        <div class="card-header">
+          <h2>Booking Activity</h2>
+          <span class="refresh">⟳</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Guest</th><th>Apartment</th><th>Remaining</th><th>Status</th><th>Amount</th></tr>
+            </thead>
+            <tbody id="bookingsFeedBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card simple-card area-ring1">
+        <div class="simple-top">
+          <span class="ring-icon">💳</span>
+        </div>
+        <div class="ring-label">Paid to Host</div>
+        <div class="ring-value" id="paidToHostValue">—</div>
+        <div class="muted small" id="ring1MonthLabel">—</div>
+        <ul class="host-mini-list" id="paidHostList"></ul>
+      </div>
+
+      <div class="card simple-card area-ring2">
+        <div class="simple-top">
+          <span class="ring-icon">💰</span>
+        </div>
+        <div class="ring-label">Unpaid to Host</div>
+        <div class="ring-value" id="unpaidToHostValue">—</div>
+        <div class="muted small" id="ring2MonthLabel">—</div>
+        <ul class="host-mini-list" id="unpaidHostList"></ul>
+      </div>
+
+      <div class="card simple-card area-comm1">
+        <div class="simple-top">
+          <span class="ring-icon">⏳</span>
+        </div>
+        <div class="ring-label">Upcoming Commission</div>
+        <div class="ring-value" id="upcomingCommissionValue">—</div>
+        <div class="muted small" id="comm1MonthLabel">—</div>
+      </div>
+
+      <div class="card simple-card area-comm2">
+        <div class="simple-top">
+          <span class="ring-icon">✅</span>
+        </div>
+        <div class="ring-label">Fully Paid Commission</div>
+        <div class="ring-value" id="paidCommissionValue">—</div>
+        <div class="muted small" id="comm2MonthLabel">—</div>
+      </div>
+
+      <div class="card chart-card area-table">
+        <div class="card-header">
+          <h2>Bookings</h2>
+          <div class="toggle-group" data-chart="bookings">
+            <button type="button" class="toggle-btn active" data-mode="months">Months</button>
+            <button type="button" class="toggle-btn" data-mode="days">Days</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card chart-card area-line">
+        <div class="card-header">
+          <h2>Overall Income</h2>
+          <div class="toggle-group" data-chart="income">
+            <button type="button" class="toggle-btn active" data-mode="monthly">Monthly</button>
+            <button type="button" class="toggle-btn" data-mode="daily">Daily</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="lineChart"></canvas>
+          <div class="chart-tooltip" id="incomeTooltip"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="charts.js"></script>
+<script src="script.js"></script>
+<script src="finances.js"></script>
+</body>
+</html>
