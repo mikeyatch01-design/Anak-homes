@@ -35,15 +35,9 @@ create table if not exists hidden_hosts (
   primary key (key, user_id)
 );
 
-create table if not exists profile (
-  user_id  uuid primary key default auth.uid() references auth.users(id) on delete cascade,
-  name     text not null default 'Mike'
-);
-
 alter table bookings      enable row level security;
 alter table custom_hosts  enable row level security;
 alter table hidden_hosts  enable row level security;
-alter table profile       enable row level security;
 
 -- One "owns their rows" policy per table — this is the actual security
 -- boundary: Postgres refuses the query server-side if the JWT's uid
@@ -51,4 +45,9 @@ alter table profile       enable row level security;
 create policy "owns bookings"      on bookings      for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "owns custom_hosts"  on custom_hosts  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "owns hidden_hosts"  on hidden_hosts  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "owns profile"       on profile       for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Note: an earlier version of this schema also created a `profile` table
+-- for an editable display name. That feature was dropped (the name is
+-- now a fixed "Anak" in script.js) — if you ran the old version of this
+-- file, the unused `profile` table can be dropped with:
+--   drop table if exists profile;

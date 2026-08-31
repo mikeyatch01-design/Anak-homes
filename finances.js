@@ -1,6 +1,6 @@
 // ---------- Finances dashboard, driven by real booking data ----------
-// Data model/seed/helpers live in data.js. Chart-drawing primitives
-// live in charts.js. This file computes every number on the page from
+// Data model/helpers live in data.js. Chart-drawing primitives live in
+// charts.js. This file computes every number on the page from
 // loadBookings() — nothing here is hand-typed/mocked.
 //
 // Definitions used throughout (Mike is the middleman — the commission
@@ -14,6 +14,11 @@
 //   Unpaid bookings  = guest still owes a balance (remaining > 0)
 //   Paid to Host     = host's share actually paid out this month
 //   Unpaid to Host   = host's share not yet paid out this month
+
+(async function () {
+const session = await requireSession();
+if (!session) return; // requireSession() is already redirecting to login.html
+await initAppData();
 
 const liveData = loadBookings();
 
@@ -425,3 +430,4 @@ renderHostBreakdown();
 renderBookingsFeed();
 scheduleCheckinRefresh();
 redrawAllCharts();
+})();

@@ -1,17 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="auth-checking">
 <head>
 <meta charset="UTF-8">
-<script>
-  // Runs before the rest of <head> so a locked device redirects to the
-  // login screen immediately, instead of flashing real content first.
-  try {
-    if (localStorage.getItem('urbanhomes-auth-v1') && sessionStorage.getItem('urbanhomes-unlocked') !== 'true') {
-      var here = location.pathname.split('/').pop() || 'index.html';
-      location.replace('login.html?next=' + encodeURIComponent(here));
-    }
-  } catch (e) {}
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anak Homes Analytics Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -78,7 +68,7 @@
     <header class="topbar">
       <div class="topbar-title">
         <h1>Analytics</h1>
-        <p class="welcome" id="welcomeText">Welcome back, Mike</p>
+        <p class="welcome" id="welcomeText">Welcome back, Anak</p>
       </div>
       <div class="topbar-actions">
         <div class="theme-toggle" id="themeToggle" role="button" aria-label="Toggle theme">
@@ -87,8 +77,8 @@
           <span class="moon">☾</span>
         </div>
         <div class="user-chip">
-          <div class="avatar" id="userAvatar">M</div>
-          <span id="userName">Mike</span>
+          <div class="avatar" id="userAvatar">A</div>
+          <span id="userName">Anak</span>
         </div>
       </div>
     </header>
@@ -255,6 +245,8 @@
   </main>
 </div>
 
+<script src="supabase.min.js"></script>
+<script src="supabaseClient.js"></script>
 <script src="data.js"></script>
 <script src="auth.js"></script>
 <script src="charts.js"></script>

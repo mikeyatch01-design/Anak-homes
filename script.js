@@ -99,17 +99,15 @@ darkMediaQuery.addEventListener('change', () => {
 });
 initTheme();
 
-// ---------- Profile (name shown in the sidebar user chip) ----------
-// Reads from data.js's loadProfile() so a name change in Settings
-// reflects on every page without needing separate wiring per page.
+// ---------- Profile (fixed name shown in the sidebar user chip) ----------
+const DISPLAY_NAME = 'Anak';
 function applyProfile() {
-  const profile = loadProfile();
   const nameEl = document.getElementById('userName');
   const avatarEl = document.getElementById('userAvatar');
   const welcomeEl = document.getElementById('welcomeText');
-  if (nameEl) nameEl.textContent = profile.name;
-  if (avatarEl) avatarEl.textContent = initials(profile.name);
-  if (welcomeEl) welcomeEl.textContent = `Welcome back, ${profile.name}`;
+  if (nameEl) nameEl.textContent = DISPLAY_NAME;
+  if (avatarEl) avatarEl.textContent = initials(DISPLAY_NAME);
+  if (welcomeEl) welcomeEl.textContent = `Welcome back, ${DISPLAY_NAME}`;
 }
 applyProfile();
 

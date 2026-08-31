@@ -1,35 +1,51 @@
 // ---------- Auth wiring (shared across dashboard pages) ----------
-// The actual lock gate is a redirect: the inline <head> script on every
-// protected page sends locked visitors to login.html before anything
-// here even loads (see the note in data.js for what the lock does and
-// doesn't protect against). This file just wires up Sign Out.
+// Real, server-verified sessions via Supabase Auth — replacing the old
+// client-side-only password check. Every protected page's own script
+// (finances.js/bookings.js/host.js/settings.js) starts with:
+//   const session = await requireSession();
+//   if (!session) return; // requireSession() is already redirecting
+// before touching any data, so an unauthenticated visitor never sees the
+// page and — more importantly — never gets data back from Supabase either,
+// since Row Level Security independently enforces the same rule server-side.
 
-// ---------- Re-lock on back/forward (bfcache) navigation ----------
-// The inline <head> guard on each protected page only runs once, at
-// initial parse. Pressing Back after Sign Out can restore the page
-// straight from the browser's bfcache instead of re-parsing it — which
-// would show the already-rendered dashboard even though sessionStorage's
-// unlock flag was just cleared. `pageshow` fires again on a bfcache
-// restore (with `persisted: true`), so re-check the lock there too.
-window.addEventListener('pageshow', (e) => {
+// The <head> of every protected page sets `html.auth-checking { visibility:
+// hidden }` (see style.css) so nothing flashes on screen while the session
+// check is in flight; this reveals the page once it resolves to "signed in".
+function revealPage() {
+  document.documentElement.classList.remove('auth-checking');
+}
+
+async function requireSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    const here = location.pathname.split('/').pop() || 'index.html';
+    location.replace('login.html?next=' + encodeURIComponent(here));
+    return null;
+  }
+  revealPage();
+  return session;
+}
+
+// ---------- Re-check on back/forward (bfcache) navigation ----------
+// A bfcache restore doesn't re-run the page's initial async bootstrap, so
+// without this, pressing Back after Sign Out could show the last-rendered
+// page from memory. `pageshow` fires again on a bfcache restore (with
+// `persisted: true`); re-validate the real session there too.
+window.addEventListener('pageshow', async (e) => {
   if (!e.persisted) return;
-  try {
-    if (hasPassword() && !isUnlocked()) {
-      const here = location.pathname.split('/').pop() || 'index.html';
-      location.replace('login.html?next=' + encodeURIComponent(here));
-    }
-  } catch (err) {}
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    const here = location.pathname.split('/').pop() || 'index.html';
+    location.replace('login.html?next=' + encodeURIComponent(here));
+  }
 });
 
 // ---------- Sign out ----------
-// Always sends you back to the login screen. If a password is set,
-// this also re-locks the device so login.html actually asks for it
-// again; if not, login.html falls back to its "Continue" flow.
 const signOutLink = document.getElementById('signOutLink');
 if (signOutLink) {
-  signOutLink.addEventListener('click', (e) => {
+  signOutLink.addEventListener('click', async (e) => {
     e.preventDefault();
-    lockNow();
+    await sb.auth.signOut();
     location.href = 'login.html';
   });
 }

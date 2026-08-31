@@ -259,7 +259,8 @@ body {
 
 /* ---------- Responsive ---------- */
 @media (max-width: 460px) {
-  .login-card { padding: 36px 26px; border-radius: 20px; }
+  .login-card { padding: 28px 20px; border-radius: 20px; }
+  .login-card h1 { font-size: 23px; }
 }
 
 /* ---------- Reduced motion ---------- */

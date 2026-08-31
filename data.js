@@ -1,9 +1,15 @@
 // ---------- Shared data layer ----------
-// Real booking records transcribed from MICNIC.xlsx (MAY/JUNE/JULY sheets).
-// Loaded/saved via localStorage so edits made on the Bookings page carry
-// over to the Finances dashboard (no backend yet — this is per-browser
-// only, and won't sync live across two open tabs).
+// Backed by Supabase (see supabaseClient.js) instead of localStorage —
+// real per-account data, gated by Row Level Security on the server, not
+// just hidden behind the login page. Chart-drawing primitives live in
+// charts.js; each page's own file (finances.js/bookings.js/host.js/
+// settings.js) still calls loadBookings()/loadCustomHosts()/etc.
+// synchronously, exactly as before — they're cheap in-memory reads of a
+// cache populated once by initAppData(), so none of that call-site code
+// had to change into async/await.
 
+// ---------- Sample data (used only by "Reset to sample data" in Settings) ----------
+// Real booking records transcribed from MICNIC.xlsx (MAY/JUNE/JULY sheets).
 const BOOKINGS_SEED = {
   '2026-05': [
     { id: 'B001', dateBooked: '2026-05-24', guest: 'Diana', apartment: '1014', checkin: '2026-05-24', checkout: '2026-05-25', total: 240000, hostShare: 216000, commission: 24000, amountPaid: 240000, remaining: 0, hostPaid: '216000', status: '' },
@@ -99,12 +105,6 @@ const MONTHS_FULL = ['January','February','March','April','May','June','July','A
 const WEEKDAY_LABELS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
 // ---------- Month keys ----------
-// Bookings are grouped by "YYYY-MM" (the check-in date's year and month),
-// not a fixed list — new months appear automatically as bookings land in
-// them, and lexicographic sort on "YYYY-MM" is chronological sort for free.
-// Local calendar date as "YYYY-MM-DD" — NOT toISOString(), which reads
-// UTC and would misfile the first few hours of each local day into the
-// previous day/month for a UTC+3 (Tanzania) user.
 function todayIsoLocal() {
   const d = new Date();
   const y = d.getFullYear();
@@ -157,47 +157,10 @@ function computeBookingStatus(booking, today) {
   return 'COMPLETED';
 }
 
-const BOOKINGS_STORAGE_KEY = 'urbanhomes-bookings-v1';
-
 function cloneSeed() {
   const clone = {};
   Object.keys(BOOKINGS_SEED).forEach(key => { clone[key] = BOOKINGS_SEED[key].map(r => ({ ...r })); });
   return clone;
-}
-
-// One-time upgrade for bookings saved before month buckets became
-// "YYYY-MM" keys — remaps the old fixed may/june/july keys so data saved
-// in an earlier session isn't orphaned under a key nothing looks up anymore.
-const LEGACY_MONTH_KEYS = { may: '2026-05', june: '2026-06', july: '2026-07' };
-
-function loadBookings() {
-  try {
-    const raw = localStorage.getItem(BOOKINGS_STORAGE_KEY);
-    if (!raw) return cloneSeed();
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return cloneSeed();
-
-    let migrated = false;
-    const data = {};
-    Object.keys(parsed).forEach(key => {
-      const newKey = LEGACY_MONTH_KEYS[key] || key;
-      if (newKey !== key) migrated = true;
-      data[newKey] = parsed[key];
-    });
-    if (migrated) saveBookings(data);
-    return data;
-  } catch (e) {
-    return cloneSeed();
-  }
-}
-
-function saveBookings(data) {
-  try {
-    localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(data));
-  } catch (e) {
-    // Storage unavailable (private browsing, quota) — in-memory state
-    // for this page load still works, it just won't persist.
-  }
 }
 
 // Flattens { "2026-05":[...], "2026-06":[...], ... } into one array, each
@@ -206,51 +169,140 @@ function allBookings(data) {
   return monthKeysOf(data).flatMap(month => data[month].map(b => ({ ...b, month })));
 }
 
-// ---------- Custom hosts (added via the Host page) ----------
-// { key, name, icon, keywords: [...] } — keywords are matched against
-// a booking's apartment field (lowercased, substring match) to decide
-// which host it counts toward.
-const CUSTOM_HOSTS_KEY = 'urbanhomes-custom-hosts-v1';
+// ---------- Cloud-backed cache ----------
+// Populated once per page load by initAppData() (see auth.js's
+// requireSession(), which every protected page awaits before rendering).
+// Every load*() below is a synchronous read of this cache — the app's
+// render code was written against synchronous loaders, and keeping that
+// contract avoids threading async/await through every render function.
+let _userId = null;
+let _bookingsData = {};
+let _customHosts = [];
+let _hiddenHostKeys = [];
 
-function loadCustomHosts() {
-  try {
-    const raw = localStorage.getItem(CUSTOM_HOSTS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
+function rowToBooking(row) {
+  return {
+    id: row.booking_code,
+    dateBooked: row.date_booked || '',
+    guest: row.guest || '',
+    apartment: row.apartment || '',
+    checkin: row.checkin || '',
+    checkout: row.checkout || '',
+    total: Number(row.total) || 0,
+    hostShare: Number(row.host_share) || 0,
+    commission: Number(row.commission) || 0,
+    amountPaid: Number(row.amount_paid) || 0,
+    remaining: Number(row.remaining) || 0,
+    hostPaid: row.host_paid || '',
+    status: row.status || '',
+    _dbId: row.id,
+  };
 }
 
-function saveCustomHosts(hosts) {
-  try {
-    localStorage.setItem(CUSTOM_HOSTS_KEY, JSON.stringify(hosts));
-  } catch (e) {
-    // Storage unavailable — in-memory state for this page load still works.
-  }
+function bookingToRow(b, month) {
+  const row = {
+    user_id: _userId,
+    booking_code: b.id,
+    month_key: month,
+    date_booked: b.dateBooked || null,
+    guest: b.guest || '',
+    apartment: b.apartment || '',
+    checkin: b.checkin || null,
+    checkout: b.checkout || null,
+    total: b.total || 0,
+    host_share: b.hostShare || 0,
+    commission: b.commission || 0,
+    amount_paid: b.amountPaid || 0,
+    remaining: b.remaining || 0,
+    host_paid: b.hostPaid || '',
+    status: b.status || '',
+  };
+  if (b._dbId) row.id = b._dbId;
+  return row;
 }
 
-// Built-in hosts (Mikocheni, Masaki, etc.) are defined in code, not
-// storage — "deleting" one just remembers its key here so it's filtered
-// out of the list, without losing the underlying booking data.
-const HIDDEN_HOSTS_KEY = 'urbanhomes-hidden-hosts-v1';
+// Fetches everything fresh from Supabase into the in-memory cache. Every
+// protected page's bootstrap awaits this once, right after confirming a
+// session exists, before calling any render function.
+async function initAppData() {
+  const { data: userData } = await sb.auth.getUser();
+  _userId = userData && userData.user ? userData.user.id : null;
 
-function loadHiddenHostKeys() {
-  try {
-    const raw = localStorage.getItem(HIDDEN_HOSTS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
+  const [bookingsRes, hostsRes, hiddenRes] = await Promise.all([
+    sb.from('bookings').select('*'),
+    sb.from('custom_hosts').select('*'),
+    sb.from('hidden_hosts').select('key'),
+  ]);
+
+  _bookingsData = {};
+  (bookingsRes.data || []).forEach(row => {
+    const month = row.month_key;
+    (_bookingsData[month] = _bookingsData[month] || []).push(rowToBooking(row));
+  });
+  Object.keys(_bookingsData).forEach(month => {
+    _bookingsData[month].sort((a, b) => (a.checkin || '').localeCompare(b.checkin || ''));
+  });
+
+  _customHosts = (hostsRes.data || []).map(r => ({ key: r.key, name: r.name, icon: r.icon, keywords: r.keywords || [] }));
+  _hiddenHostKeys = (hiddenRes.data || []).map(r => r.key);
 }
 
-function saveHiddenHostKeys(keys) {
-  try {
-    localStorage.setItem(HIDDEN_HOSTS_KEY, JSON.stringify(keys));
-  } catch (e) {
-    // Storage unavailable — in-memory state for this page load still works.
-  }
+function loadBookings() { return _bookingsData; }
+function loadCustomHosts() { return _customHosts; }
+function loadHiddenHostKeys() { return _hiddenHostKeys; }
+
+// Insert or update one booking row (update when `b._dbId` is set, insert
+// otherwise); also keeps the in-memory cache's copy of the row in sync.
+async function upsertBooking(b, month) {
+  const { data, error } = await sb.from('bookings').upsert(bookingToRow(b, month)).select().single();
+  if (error) throw error;
+  return rowToBooking(data);
+}
+
+async function insertCustomHost(host) {
+  const { error } = await sb.from('custom_hosts').insert({ user_id: _userId, key: host.key, name: host.name, icon: host.icon, keywords: host.keywords });
+  if (error) throw error;
+  _customHosts.push(host);
+}
+
+async function deleteCustomHostRemote(key) {
+  const { error } = await sb.from('custom_hosts').delete().eq('key', key);
+  if (error) throw error;
+  _customHosts = _customHosts.filter(h => h.key !== key);
+}
+
+async function hideHostRemote(key) {
+  const { error } = await sb.from('hidden_hosts').insert({ user_id: _userId, key });
+  if (error) throw error;
+  _hiddenHostKeys.push(key);
+}
+
+// Wipes everything for this account and replaces it in one shot — used by
+// Settings' "Import data" and "Reset to sample data". Deletes are scoped
+// by RLS to the signed-in user regardless of the `.not()` filter below
+// (which exists only because PostgREST requires an explicit filter on
+// delete-everything calls).
+async function replaceAllData({ bookings, customHosts, hiddenHostKeys }) {
+  await Promise.all([
+    sb.from('bookings').delete().not('id', 'is', null),
+    sb.from('custom_hosts').delete().not('key', 'is', null),
+    sb.from('hidden_hosts').delete().not('key', 'is', null),
+  ]);
+
+  const bookingRows = [];
+  Object.keys(bookings || {}).forEach(month => {
+    (bookings[month] || []).forEach(b => bookingRows.push(bookingToRow(b, month)));
+  });
+  const hostRows = (customHosts || []).map(h => ({ user_id: _userId, key: h.key, name: h.name, icon: h.icon, keywords: h.keywords }));
+  const hiddenRows = (hiddenHostKeys || []).map(key => ({ user_id: _userId, key }));
+
+  await Promise.all([
+    bookingRows.length ? sb.from('bookings').insert(bookingRows) : Promise.resolve(),
+    hostRows.length ? sb.from('custom_hosts').insert(hostRows) : Promise.resolve(),
+    hiddenRows.length ? sb.from('hidden_hosts').insert(hiddenRows) : Promise.resolve(),
+  ]);
+
+  await initAppData();
 }
 
 // ---------- Host grouping (shared: Host page + Finances dashboard) ----------
@@ -290,226 +342,6 @@ function normalizeApartment(apartment) {
     if (h.keywords.some(k => a.includes(k))) return h.key;
   }
   return 'other';
-}
-
-// ---------- Profile (set from the Settings page) ----------
-const PROFILE_KEY = 'urbanhomes-profile-v1';
-const DEFAULT_PROFILE = { name: 'Mike' };
-
-function loadProfile() {
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    return parsed && parsed.name ? parsed : { ...DEFAULT_PROFILE };
-  } catch (e) {
-    return { ...DEFAULT_PROFILE };
-  }
-}
-
-function saveProfile(profile) {
-  try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  } catch (e) {
-    // Storage unavailable — in-memory state for this page load still works.
-  }
-}
-
-// ---------- Local device lock (client-side only) ----------
-// This is NOT real multi-user authentication — there's no backend yet.
-// It's a lightweight password gate stored (hashed, never plaintext) in
-// this browser only, meant to deter casual access on a shared device
-// until a real login/accounts system replaces it. Anyone with devtools
-// access to this browser can still bypass it entirely (e.g. by setting
-// the unlocked flag directly, or reading this file's source) — be
-// upfront about that limit rather than overselling it as real security.
-// Hashing is PBKDF2-SHA256 with a high iteration count (deliberately
-// slow, unlike a bare SHA-256 digest) so an offline guess against a
-// leaked hash is at least meaningfully expensive.
-const AUTH_KEY = 'urbanhomes-auth-v1';
-const UNLOCK_FLAG = 'urbanhomes-unlocked';
-const PBKDF2_ITERATIONS = 150000;
-
-function hasPassword() {
-  try {
-    return !!localStorage.getItem(AUTH_KEY);
-  } catch (e) {
-    return false;
-  }
-}
-
-function bytesToHex(bytes) {
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function hexToBytes(hex) {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
-  return bytes;
-}
-
-async function deriveHash(password, saltHex) {
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(password), { name: 'PBKDF2' }, false, ['deriveBits']
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: hexToBytes(saltHex), iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
-    keyMaterial,
-    256
-  );
-  return bytesToHex(new Uint8Array(bits));
-}
-
-// Setting a password also mints a fresh recovery code and returns it
-// in plaintext so the caller can show it to the user exactly once —
-// it's never stored anywhere except hashed. This is the ONLY way back
-// in if the password is forgotten; there is deliberately no one-click
-// bypass, since anyone could click that just as easily as the owner.
-async function setPassword(password) {
-  const salt = bytesToHex(crypto.getRandomValues(new Uint8Array(16)));
-  const hash = await deriveHash(password, salt);
-  localStorage.setItem(AUTH_KEY, JSON.stringify({ salt, hash }));
-  markUnlocked();
-  clearFailedAttempts();
-  return setRecoveryCode(generateRecoveryCode());
-}
-
-function clearPassword() {
-  localStorage.removeItem(AUTH_KEY);
-  sessionStorage.removeItem(UNLOCK_FLAG);
-  clearFailedAttempts();
-  clearRecoveryCode();
-}
-
-async function verifyPassword(password) {
-  const raw = localStorage.getItem(AUTH_KEY);
-  if (!raw) return true; // no lock configured — nothing to verify against
-  let salt, hash;
-  try {
-    ({ salt, hash } = JSON.parse(raw));
-  } catch (e) {
-    return false; // corrupted record — fail closed rather than throw
-  }
-  const attempt = await deriveHash(password, salt);
-  return attempt === hash;
-}
-
-// ---------- Recovery code ----------
-// Generated fresh every time a password is set (see setPassword above).
-// Excludes visually-ambiguous characters (0/O, 1/I/L) since it's meant
-// to be hand-copied or read off a screenshot.
-const RECOVERY_KEY = 'urbanhomes-recovery-v1';
-const RECOVERY_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-function generateRecoveryCode() {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  let code = '';
-  for (let i = 0; i < bytes.length; i++) {
-    code += RECOVERY_CHARSET[bytes[i] % RECOVERY_CHARSET.length];
-    if (i % 4 === 3 && i !== bytes.length - 1) code += '-';
-  }
-  return code; // e.g. "K3F9-7QXP-2MNB-9ZLT"
-}
-
-function normalizeRecoveryCode(code) {
-  return (code || '').replace(/[\s-]/g, '').toUpperCase();
-}
-
-async function setRecoveryCode(code) {
-  const salt = bytesToHex(crypto.getRandomValues(new Uint8Array(16)));
-  const hash = await deriveHash(normalizeRecoveryCode(code), salt);
-  localStorage.setItem(RECOVERY_KEY, JSON.stringify({ salt, hash }));
-  return code; // plaintext — caller shows this once, nothing else stores it
-}
-
-function hasRecoveryCode() {
-  try {
-    return !!localStorage.getItem(RECOVERY_KEY);
-  } catch (e) {
-    return false;
-  }
-}
-
-async function verifyRecoveryCode(code) {
-  const raw = localStorage.getItem(RECOVERY_KEY);
-  if (!raw) return false; // no recovery code on file — nothing to check against
-  let salt, hash;
-  try {
-    ({ salt, hash } = JSON.parse(raw));
-  } catch (e) {
-    return false;
-  }
-  const attempt = await deriveHash(normalizeRecoveryCode(code), salt);
-  return attempt === hash;
-}
-
-function clearRecoveryCode() {
-  localStorage.removeItem(RECOVERY_KEY);
-}
-
-function isUnlocked() {
-  try {
-    return sessionStorage.getItem(UNLOCK_FLAG) === 'true';
-  } catch (e) {
-    return true; // fail open rather than lock someone out over a storage error
-  }
-}
-
-function markUnlocked() {
-  try {
-    sessionStorage.setItem(UNLOCK_FLAG, 'true');
-  } catch (e) {
-    // Storage unavailable — the lock check will just fail open (see isUnlocked).
-  }
-}
-
-function lockNow() {
-  sessionStorage.removeItem(UNLOCK_FLAG);
-}
-
-// ---------- Failed-attempt throttling ----------
-// Slows down casual guessing through the actual login/change-password
-// forms. It does NOT stop someone calling verifyPassword() directly
-// from devtools — there's no way to prevent that client-side — but it
-// meaningfully raises the bar for guessing through the UI itself.
-const ATTEMPTS_KEY = 'urbanhomes-auth-attempts-v1';
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 30000;
-
-function loadAttemptState() {
-  try {
-    const raw = localStorage.getItem(ATTEMPTS_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    return parsed && typeof parsed.count === 'number' ? parsed : { count: 0, lockedUntil: 0 };
-  } catch (e) {
-    return { count: 0, lockedUntil: 0 };
-  }
-}
-
-function saveAttemptState(state) {
-  try {
-    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(state));
-  } catch (e) {
-    // Storage unavailable — throttling just won't persist, verification still works.
-  }
-}
-
-function recordFailedAttempt() {
-  const state = loadAttemptState();
-  state.count += 1;
-  if (state.count >= MAX_ATTEMPTS) {
-    state.lockedUntil = Date.now() + LOCKOUT_MS;
-    state.count = 0;
-  }
-  saveAttemptState(state);
-}
-
-function clearFailedAttempts() {
-  saveAttemptState({ count: 0, lockedUntil: 0 });
-}
-
-// Milliseconds remaining before another attempt is allowed (0 if not locked out).
-function lockoutRemainingMs() {
-  return Math.max(0, loadAttemptState().lockedUntil - Date.now());
 }
 
 function formatTZS(val) {

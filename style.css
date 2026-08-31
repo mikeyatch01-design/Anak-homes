@@ -31,6 +31,14 @@ body.dark-theme {
 
 html, body { height: 100%; }
 
+/* Set on <html> by default on every protected page; auth.js's
+   requireSession() removes it once a real Supabase session is confirmed
+   (or the page is already navigating away to login.html) — this is what
+   stands in for the old inline-script "redirect before paint" trick,
+   which can't work anymore now that the check is an async network/local
+   session read instead of a synchronous localStorage read. */
+html.auth-checking body { visibility: hidden; }
+
 body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1587,6 +1595,8 @@ body.dark-theme .host-card.show {
   margin-top: 4px;
 }
 
+.security-error.success { color: var(--green); }
+
 .file-btn {
   display: inline-flex;
   align-items: center;
@@ -1655,8 +1665,34 @@ body.dark-theme .host-card.show {
   .topbar-title h1 { font-size: 22px; }
 }
 
+/* Phone portrait — everything above only cuts down to fewer *columns* of
+   otherwise desktop-sized cards/text, which is still cramped in a ~360-
+   430px-wide single column. This tightens the sizing itself, not just
+   the grid, so phones don't need a landscape rotation to read comfortably. */
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
   .donut-card { grid-column: span 1; }
   .topbar-actions { gap: 10px; }
+
+  .summary-grid, .stats-grid, .charts-grid { gap: 12px; margin-bottom: 16px; }
+
+  .card { padding: 16px; }
+  .summary-value { font-size: 22px; }
+  .stat-value { font-size: 19px; }
+  .stat-icon { width: 24px; height: 24px; font-size: 12px; }
+  .topbar-title h1 { font-size: 19px; }
+  .welcome { font-size: 13px; }
+  .ring-value { font-size: 17px; }
+
+  .chart-wrap { height: 180px; }
+  .donut-wrap { width: 116px; height: 116px; margin: 6px auto 10px; }
+
+  .modal-card { padding: 18px; }
+  .modal-header h2 { font-size: 15.5px; }
+  /* Two fields side by side in an already-narrow modal leaves each one
+     ~140px wide — too tight to read/tap comfortably, so stack them. */
+  .form-row.two-col { grid-template-columns: 1fr; }
+
+  .totals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .total-chip { padding: 10px 12px; }
 }
