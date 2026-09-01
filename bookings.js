@@ -357,7 +357,8 @@
         renderBookings();
         closeModal();
       } catch (err) {
-        alert('Could not save this booking — please check your connection and try again.');
+        console.error('upsertBooking failed:', err);
+        alert('Could not save this booking:\n\n' + (err && err.message ? err.message : err));
       } finally {
         if (modalSubmitBtn) modalSubmitBtn.disabled = false;
       }

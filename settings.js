@@ -252,7 +252,8 @@
           showDataNote('Backup imported — reloading…', false);
           setTimeout(() => location.reload(), 700);
         } catch (err) {
-          showDataNote('Import failed — nothing was changed.', true);
+          console.error('replaceAllData (import) failed:', err);
+          showDataNote('Import failed: ' + (err && err.message ? err.message : err), true);
         }
       };
       reader.readAsText(file);
@@ -273,7 +274,8 @@
         showDataNote('Reset — reloading…', false);
         setTimeout(() => location.reload(), 700);
       } catch (err) {
-        showDataNote('Reset failed — nothing was changed.', true);
+        console.error('replaceAllData (reset) failed:', err);
+        showDataNote('Reset failed: ' + (err && err.message ? err.message : err), true);
       }
     });
   }

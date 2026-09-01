@@ -78,7 +78,8 @@
       }
       renderHosts();
     } catch (err) {
-      alert('Could not delete this host — please try again.');
+      console.error('deleteHost failed:', err);
+      alert('Could not delete this host:\n\n' + (err && err.message ? err.message : err));
     }
   }
 
@@ -263,7 +264,8 @@
         renderHosts();
         closeHostModal();
       } catch (err) {
-        alert('Could not add this host — please try again.');
+        console.error('insertCustomHost failed:', err);
+        alert('Could not add this host:\n\n' + (err && err.message ? err.message : err));
       } finally {
         if (hostSubmitBtn) hostSubmitBtn.disabled = false;
       }

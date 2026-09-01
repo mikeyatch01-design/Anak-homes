@@ -175,7 +175,6 @@ function allBookings(data) {
 // Every load*() below is a synchronous read of this cache — the app's
 // render code was written against synchronous loaders, and keeping that
 // contract avoids threading async/await through every render function.
-let _userId = null;
 let _bookingsData = {};
 let _customHosts = [];
 let _hiddenHostKeys = [];
@@ -200,8 +199,13 @@ function rowToBooking(row) {
 }
 
 function bookingToRow(b, month) {
+  // user_id is deliberately omitted — the column defaults to auth.uid()
+  // server-side, resolved fresh from the request's real JWT on every
+  // call. Sending a client-cached _userId here instead would risk an
+  // explicit `null` (violating the not-null constraint) if that cache
+  // was ever stale, which is a worse failure mode than just letting
+  // Postgres resolve it itself.
   const row = {
-    user_id: _userId,
     booking_code: b.id,
     month_key: month,
     date_booked: b.dateBooked || null,
@@ -225,9 +229,6 @@ function bookingToRow(b, month) {
 // protected page's bootstrap awaits this once, right after confirming a
 // session exists, before calling any render function.
 async function initAppData() {
-  const { data: userData } = await sb.auth.getUser();
-  _userId = userData && userData.user ? userData.user.id : null;
-
   const [bookingsRes, hostsRes, hiddenRes] = await Promise.all([
     sb.from('bookings').select('*'),
     sb.from('custom_hosts').select('*'),
@@ -260,7 +261,8 @@ async function upsertBooking(b, month) {
 }
 
 async function insertCustomHost(host) {
-  const { error } = await sb.from('custom_hosts').insert({ user_id: _userId, key: host.key, name: host.name, icon: host.icon, keywords: host.keywords });
+  // user_id omitted — see the note in bookingToRow() above.
+  const { error } = await sb.from('custom_hosts').insert({ key: host.key, name: host.name, icon: host.icon, keywords: host.keywords });
   if (error) throw error;
   _customHosts.push(host);
 }
@@ -272,7 +274,7 @@ async function deleteCustomHostRemote(key) {
 }
 
 async function hideHostRemote(key) {
-  const { error } = await sb.from('hidden_hosts').insert({ user_id: _userId, key });
+  const { error } = await sb.from('hidden_hosts').insert({ key });
   if (error) throw error;
   _hiddenHostKeys.push(key);
 }
@@ -293,8 +295,8 @@ async function replaceAllData({ bookings, customHosts, hiddenHostKeys }) {
   Object.keys(bookings || {}).forEach(month => {
     (bookings[month] || []).forEach(b => bookingRows.push(bookingToRow(b, month)));
   });
-  const hostRows = (customHosts || []).map(h => ({ user_id: _userId, key: h.key, name: h.name, icon: h.icon, keywords: h.keywords }));
-  const hiddenRows = (hiddenHostKeys || []).map(key => ({ user_id: _userId, key }));
+  const hostRows = (customHosts || []).map(h => ({ key: h.key, name: h.name, icon: h.icon, keywords: h.keywords }));
+  const hiddenRows = (hiddenHostKeys || []).map(key => ({ key }));
 
   await Promise.all([
     bookingRows.length ? sb.from('bookings').insert(bookingRows) : Promise.resolve(),
