@@ -210,10 +210,153 @@
     });
   }
 
+  // ---------- Excel bookings import ----------
+  // Reads the same column layout the Excel export produces (ID, Date
+  // booked, Guest, Apartment, Check-in, Check-out, Total, Host share,
+  // Commission, Amount paid, Remaining, Host paid, Status) so a file
+  // exported from here — edited, or handed off and filled in by someone
+  // else — round-trips back in cleanly. One sheet per month, same as the
+  // export; a "Summary" sheet (or any sheet without a Guest/Check-in
+  // column) is skipped automatically rather than misread as bookings.
+  const EXCEL_HEADER_MAP = {
+    'id': 'id', 'date booked': 'dateBooked', 'guest': 'guest', 'apartment': 'apartment',
+    'check-in': 'checkin', 'check-out': 'checkout', 'total': 'total', 'host share': 'hostShare',
+    'commission': 'commission', 'amount paid': 'amountPaid', 'remaining': 'remaining',
+    'host paid': 'hostPaid', 'status': 'status',
+  };
+
+  function excelDateToIso(val) {
+    if (val == null || val === '') return '';
+    if (val instanceof Date) {
+      const y = val.getFullYear(), m = String(val.getMonth() + 1).padStart(2, '0'), d = String(val.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    const s = String(val).trim();
+    return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : s;
+  }
+
+  // Rows already saved under the same id+month get updated in place
+  // (via _dbId) instead of duplicated — re-importing the same file twice
+  // is safe.
+  function findExistingBooking(id, month) {
+    return (loadBookings()[month] || []).find(b => b.id === id);
+  }
+
+  function nextIdForImport(month, alreadyUsedThisImport) {
+    const existing = (loadBookings()[month] || []).map(b => b.id);
+    const used = existing.concat(alreadyUsedThisImport);
+    const maxNum = used.reduce((m, id) => {
+      const n = parseInt(String(id).replace(/\D/g, ''), 10);
+      return Number.isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+    return 'B' + String(maxNum + 1).padStart(3, '0');
+  }
+
+  function parseBookingSheet(sheet) {
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+    if (!rows.length) return [];
+
+    const header = rows[0].map(h => String(h || '').trim().toLowerCase());
+    const colFor = {};
+    header.forEach((h, i) => { if (EXCEL_HEADER_MAP[h]) colFor[EXCEL_HEADER_MAP[h]] = i; });
+    if (colFor.guest == null || colFor.checkin == null) return []; // not a bookings sheet
+
+    const get = (row, key) => (colFor[key] != null ? row[colFor[key]] : '');
+    const out = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const idVal = String(get(row, 'id') || '').trim();
+      const guest = String(get(row, 'guest') || '').trim();
+      if (!guest || idVal.toUpperCase() === 'TOTAL') continue; // skip blank rows and the export's own totals row
+
+      const statusLabel = String(get(row, 'status') || '').toLowerCase();
+      out.push({
+        id: idVal,
+        dateBooked: excelDateToIso(get(row, 'dateBooked')),
+        guest,
+        apartment: String(get(row, 'apartment') || '').trim(),
+        checkin: excelDateToIso(get(row, 'checkin')),
+        checkout: excelDateToIso(get(row, 'checkout')),
+        total: Number(get(row, 'total')) || 0,
+        hostShare: Number(get(row, 'hostShare')) || 0,
+        commission: Number(get(row, 'commission')) || 0,
+        amountPaid: Number(get(row, 'amountPaid')) || 0,
+        remaining: Number(get(row, 'remaining')) || 0,
+        hostPaid: String(get(row, 'hostPaid') || '').trim(),
+        status: statusLabel.includes("didn't stay") || statusLabel.includes('didnt stay') ? "DIDN'T STAY" : '',
+      });
+    }
+    return out;
+  }
+
+  async function importExcelBookings(file) {
+    if (typeof XLSX === 'undefined') {
+      showDataNote('Excel import isn’t available right now — the xlsx library failed to load.', true);
+      return;
+    }
+
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+
+    const parsedRows = [];
+    wb.SheetNames.forEach(name => {
+      if (name.trim().toLowerCase() === 'summary') return;
+      parseBookingSheet(wb.Sheets[name]).forEach(r => parsedRows.push(r));
+    });
+
+    const withMonth = parsedRows
+      .map(r => ({ row: r, month: bookingMonthKey(r) }))
+      .filter(x => x.month); // a row with no check-in date can't be filed anywhere
+    const skipped = parsedRows.length - withMonth.length;
+
+    if (!withMonth.length) {
+      showDataNote('No bookings found in that file — check it has Guest and Check-in columns filled in.', true);
+      return;
+    }
+
+    if (!confirm(`Import ${withMonth.length} booking${withMonth.length === 1 ? '' : 's'} from this file? Rows matching an existing booking (same ID and month) will be updated; the rest will be added.`)) {
+      return;
+    }
+
+    const usedIdsByMonth = {};
+    let done = 0, failed = 0;
+    for (const { row, month } of withMonth) {
+      if (!row.id) row.id = nextIdForImport(month, usedIdsByMonth[month] || []);
+      (usedIdsByMonth[month] = usedIdsByMonth[month] || []).push(row.id);
+
+      const existing = findExistingBooking(row.id, month);
+      if (existing) row._dbId = existing._dbId;
+
+      try {
+        const saved = await upsertBooking(row, month);
+        const bucket = loadBookings();
+        bucket[month] = (bucket[month] || []).filter(b => b.id !== row.id);
+        bucket[month].push(saved);
+        done++;
+      } catch (err) {
+        console.error('Excel row import failed:', row, err);
+        failed++;
+      }
+      showDataNote(`Importing… ${done + failed}/${withMonth.length}`, false);
+    }
+
+    populateExportMonthSelect();
+    const summary = `Imported ${done} booking${done === 1 ? '' : 's'}.` +
+      (failed ? ` ${failed} failed — check the console for details.` : '') +
+      (skipped ? ` ${skipped} row${skipped === 1 ? '' : 's'} skipped (no check-in date).` : '');
+    showDataNote(summary, failed > 0);
+  }
+
   if (importDataInput) {
     importDataInput.addEventListener('change', () => {
       const file = importDataInput.files[0];
       if (!file) return;
+      const isExcel = /\.xlsx$/i.test(file.name);
+
+      if (isExcel) {
+        importExcelBookings(file).finally(() => { importDataInput.value = ''; });
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = async () => {
