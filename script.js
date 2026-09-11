@@ -153,6 +153,17 @@ document.querySelectorAll('.table-scroll-ui').forEach(ui => {
   document.addEventListener('appresize', updateThumb);
   updateThumb();
 
+  // This runs before the real booking data has loaded (that happens in
+  // finances.js/bookings.js, after this file), so the table is still
+  // just an empty header row the first time updateThumb() checks — it
+  // correctly finds nothing to scroll yet and hides the bar. A
+  // ResizeObserver on the table itself catches the real size once rows
+  // actually populate it, and any change after (switching months, etc).
+  const table = wrap.querySelector('table');
+  if (table && 'ResizeObserver' in window) {
+    new ResizeObserver(updateThumb).observe(table);
+  }
+
   let dragging = false, startX = 0, startScrollLeft = 0;
   thumb.addEventListener('pointerdown', (e) => {
     dragging = true;
