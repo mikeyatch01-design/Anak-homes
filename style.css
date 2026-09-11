@@ -719,21 +719,15 @@ body.dark-theme .card.touch-active {
   padding-bottom: 10px;
 }
 
-/* Desktop already shows every column at once — this row only exists to
-   tell a phone visitor the truncated-looking table isn't broken, and to
-   give them a reliable way to move it: a swipe gesture on a horizontally
-   scrollable strip nested inside a vertically scrolling page is easy to
-   fumble (the browser often reads it as page-scroll instead), so tap
-   buttons are the dependable fallback, not just a hint. */
+/* Desktop already shows every column at once — this row only exists on
+   phone, below the table, as a reliable way to move it: a swipe gesture
+   on a horizontally scrollable strip nested inside a vertically
+   scrolling page is easy to fumble (the browser often reads it as
+   page-scroll instead), so tap buttons are the dependable fallback. */
 .scroll-hint {
   display: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin: -4px 0 8px;
+  justify-content: flex-end;
+  margin: 8px 0 0;
 }
 @media (max-width: 760px) {
   .scroll-hint { display: flex; }

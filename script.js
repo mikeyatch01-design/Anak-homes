@@ -123,9 +123,9 @@ window.addEventListener('resize', () => {
 // A horizontal swipe on a strip nested inside a vertically-scrolling page
 // is easy to fumble — the browser often reads it as page-scroll instead.
 // These buttons are the reliable fallback: each .scroll-hint's buttons
-// nudge the .table-wrap sitting right after it.
+// nudge the .table-wrap sitting right before it.
 document.querySelectorAll('.scroll-hint').forEach(hint => {
-  const wrap = hint.nextElementSibling;
+  const wrap = hint.previousElementSibling;
   if (!wrap || !wrap.classList.contains('table-wrap')) return;
   hint.querySelectorAll('.scroll-btn').forEach(btn => {
     btn.addEventListener('click', () => {
