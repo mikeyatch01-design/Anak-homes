@@ -1674,11 +1674,19 @@ body.dark-theme .host-card.show {
   .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .donut-card { grid-column: span 3; }
 
+  /* Every area used by the cards below (including comm1/comm2 — easy to
+     forget since they're not visually adjacent to ring1/ring2 in the
+     markup) has to be listed here, or the browser drops that card out of
+     the intended flow and auto-places it wherever it finds room, in
+     whatever order it wants. Stays a 2-column grid all the way down to
+     the 860px breakpoint too — Paid/Unpaid to Host and the two
+     commission cards are meant to read as pairs, not stack vertically. */
   .charts-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
       "sales  sales"
       "ring1  ring2"
+      "comm1  comm2"
       "table  table"
       "line   line";
   }
@@ -1690,16 +1698,6 @@ body.dark-theme .host-card.show {
   .donut-card { grid-column: span 2; }
   .settings-grid { grid-template-columns: 1fr; }
   .settings-card-wide { grid-column: span 1; }
-
-  .charts-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "sales"
-      "ring1"
-      "ring2"
-      "table"
-      "line";
-  }
 
   .sidebar-toggle { display: flex; }
   .sidebar-collapse-toggle { display: none; }
