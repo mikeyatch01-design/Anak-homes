@@ -260,6 +260,11 @@ async function upsertBooking(b, month) {
   return rowToBooking(data);
 }
 
+async function deleteBookingRemote(dbId) {
+  const { error } = await sb.from('bookings').delete().eq('id', dbId);
+  if (error) throw error;
+}
+
 async function insertCustomHost(host) {
   // user_id omitted — see the note in bookingToRow() above.
   const { error } = await sb.from('custom_hosts').insert({ key: host.key, name: host.name, icon: host.icon, keywords: host.keywords });

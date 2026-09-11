@@ -713,9 +713,26 @@ body.dark-theme .card.touch-active {
 .table-card { min-width: 0; }
 .table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   /* breathing room so the horizontal scrollbar doesn't sit flush
      against the last row of the table */
   padding-bottom: 10px;
+}
+
+/* Desktop already shows every column at once — this is only there to
+   tell a phone visitor that the truncated-looking table isn't broken,
+   it scrolls. */
+.scroll-hint {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: -4px 0 8px;
+}
+@media (max-width: 760px) {
+  .scroll-hint { display: flex; }
 }
 
 table {
@@ -895,7 +912,9 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 .total-chip.owed .total-chip-icon { background: rgba(239, 68, 68, .14); color: var(--red); }
 .total-chip.owed .total-chip-value { color: var(--red); }
 
-.row-edit-btn {
+.row-actions { display: flex; gap: 6px; }
+
+.row-edit-btn, .row-delete-btn {
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--text-muted);
@@ -908,13 +927,12 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   cursor: pointer;
   transition: background .15s ease, color .15s ease;
 }
+.row-edit-btn:disabled, .row-delete-btn:disabled { opacity: .5; cursor: default; }
 
-.row-edit-btn:hover {
-  background: var(--bg);
-  color: var(--blue);
-}
+.row-edit-btn:hover { background: var(--bg); color: var(--blue); }
+.row-delete-btn:hover { background: var(--bg); color: var(--red); }
 
-.row-edit-btn svg { width: 15px; height: 15px; }
+.row-edit-btn svg, .row-delete-btn svg { width: 15px; height: 15px; }
 
 /* ---------- Buttons ---------- */
 .btn-primary {
@@ -1072,8 +1090,14 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   padding: 24px;
   width: 100%;
   max-width: 480px;
+  /* vh ignores the on-screen keyboard, so on a phone with the keyboard up
+     a 90vh box can run past the actually-visible area with no way to
+     reach the bottom of the form; dvh accounts for it. Declared after vh
+     so unsupported browsers just keep the vh fallback. */
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-card-wide { max-width: 620px; }
@@ -1680,6 +1704,7 @@ body.dark-theme .host-card.show {
   .summary-value { font-size: 22px; }
   .stat-value { font-size: 19px; }
   .stat-icon { width: 24px; height: 24px; font-size: 12px; }
+  .ring-icon { width: 26px; height: 26px; border-radius: 8px; font-size: 13px; }
   .topbar-title h1 { font-size: 19px; }
   .welcome { font-size: 13px; }
   .ring-value { font-size: 17px; }

@@ -62,9 +62,12 @@
         <td class="${b.remaining > 0 ? 'amount-owed' : ''}">${formatTZS(b.remaining)}</td>
         <td>${escapeHtml(b.hostPaid)}</td>
         <td>${statusPill(computeBookingStatus(b, today))}</td>
-        <td>
+        <td class="row-actions">
           <button type="button" class="row-edit-btn" data-id="${escapeHtml(b.id)}" title="Edit booking" aria-label="Edit booking">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 0 1 4 4L7 21l-4 1 1-4Z"/><path d="m14.5 5.5 4 4"/></svg>
+          </button>
+          <button type="button" class="row-delete-btn" data-id="${escapeHtml(b.id)}" title="Delete booking" aria-label="Delete booking">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6M14 11v6"/></svg>
           </button>
         </td>
       </tr>
@@ -329,11 +332,31 @@
   });
 
   if (tableBody) {
-    tableBody.addEventListener('click', (e) => {
-      const btn = e.target.closest('.row-edit-btn');
-      if (!btn) return;
-      const booking = monthBookings(currentMonth).find(b => b.id === btn.dataset.id);
-      if (booking) openModal(booking);
+    tableBody.addEventListener('click', async (e) => {
+      const editBtn = e.target.closest('.row-edit-btn');
+      if (editBtn) {
+        const booking = monthBookings(currentMonth).find(b => b.id === editBtn.dataset.id);
+        if (booking) openModal(booking);
+        return;
+      }
+
+      const deleteBtn = e.target.closest('.row-delete-btn');
+      if (deleteBtn) {
+        const booking = monthBookings(currentMonth).find(b => b.id === deleteBtn.dataset.id);
+        if (!booking) return;
+        if (!confirm(`Delete booking ${booking.id} (${booking.guest})? This can't be undone.`)) return;
+
+        deleteBtn.disabled = true;
+        try {
+          await deleteBookingRemote(booking._dbId);
+          liveBookings[currentMonth] = (liveBookings[currentMonth] || []).filter(b => b.id !== booking.id);
+          renderBookings();
+        } catch (err) {
+          console.error('deleteBookingRemote failed:', err);
+          alert('Could not delete this booking:\n\n' + (err && err.message ? err.message : err));
+          deleteBtn.disabled = false;
+        }
+      }
     });
   }
 
