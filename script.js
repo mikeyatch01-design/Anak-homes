@@ -118,3 +118,18 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => document.dispatchEvent(new CustomEvent('appresize')), 150);
 });
+
+// ---------- Tap-to-scroll for wide tables (mobile) ----------
+// A horizontal swipe on a strip nested inside a vertically-scrolling page
+// is easy to fumble — the browser often reads it as page-scroll instead.
+// These buttons are the reliable fallback: each .scroll-hint's buttons
+// nudge the .table-wrap sitting right after it.
+document.querySelectorAll('.scroll-hint').forEach(hint => {
+  const wrap = hint.nextElementSibling;
+  if (!wrap || !wrap.classList.contains('table-wrap')) return;
+  hint.querySelectorAll('.scroll-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      wrap.scrollBy({ left: Number(btn.dataset.dir) * 220, behavior: 'smooth' });
+    });
+  });
+});

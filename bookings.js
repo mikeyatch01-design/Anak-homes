@@ -224,23 +224,35 @@
   const fHostPaid = document.getElementById('fHostPaid');
   const fNoShow = document.getElementById('fNoShow');
 
-  // ---------- Enter moves to the next field ----------
+  // ---------- Enter / Arrow keys move between fields ----------
   // By default, Enter in a text/number/date input submits the whole form
-  // early — annoying when you're filling a dozen fields in sequence. This
-  // makes Enter behave like Tab instead (auto-selecting the next field's
-  // content so typing overwrites it, spreadsheet-style), only actually
-  // submitting once you hit Enter on the last field.
+  // early, and Up/Down in a number input nudges its value up or down
+  // instead of moving anywhere — both annoying when filling a dozen
+  // fields in sequence. This repurposes all three (Enter, ArrowDown,
+  // ArrowUp) into Tab-style field-to-field movement (auto-selecting the
+  // next field's content so typing overwrites it, spreadsheet-style),
+  // only actually submitting once you hit Enter on the last field.
+  // Left/Right are left alone — still needed to move the cursor within a
+  // field and to move between day/month/year in a date input.
   const FIELD_ORDER = [fGuest, fDateBooked, fApartment, fCheckin, fCheckout, fTotal, fAmountPaid, fHostShare, fCommission, fRemaining, fHostPaid];
+  function focusField(field) {
+    field.focus();
+    if (field.select) field.select();
+  }
   FIELD_ORDER.forEach((field, i) => {
     field.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      const next = FIELD_ORDER[i + 1];
-      if (next) {
-        next.focus();
-        if (next.select) next.select();
-      } else if (modalSubmitBtn) {
-        modalSubmitBtn.click();
+      if (e.key === 'Enter' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = FIELD_ORDER[i + 1];
+        if (next) {
+          focusField(next);
+        } else if (e.key === 'Enter' && modalSubmitBtn) {
+          modalSubmitBtn.click();
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = FIELD_ORDER[i - 1];
+        if (prev) focusField(prev);
       }
     });
   });

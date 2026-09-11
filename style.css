@@ -719,13 +719,17 @@ body.dark-theme .card.touch-active {
   padding-bottom: 10px;
 }
 
-/* Desktop already shows every column at once — this is only there to
-   tell a phone visitor that the truncated-looking table isn't broken,
-   it scrolls. */
+/* Desktop already shows every column at once — this row only exists to
+   tell a phone visitor the truncated-looking table isn't broken, and to
+   give them a reliable way to move it: a swipe gesture on a horizontally
+   scrollable strip nested inside a vertically scrolling page is easy to
+   fumble (the browser often reads it as page-scroll instead), so tap
+   buttons are the dependable fallback, not just a hint. */
 .scroll-hint {
   display: none;
   align-items: center;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
@@ -734,6 +738,23 @@ body.dark-theme .card.touch-active {
 @media (max-width: 760px) {
   .scroll-hint { display: flex; }
 }
+
+.scroll-hint .scroll-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.scroll-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.scroll-btn:active { background: var(--bg); }
 
 table {
   width: 100%;
@@ -1195,6 +1216,18 @@ td.amount-owed { color: var(--red); font-weight: 700; }
      input under 16px, which is jarring in these forms on a phone. */
   font-size: 16px;
   font-family: inherit;
+}
+
+/* Up/Down now move between fields (see bookings.js) instead of nudging
+   the number, so the spinner arrows that used to do that no longer make
+   sense to show. */
+.form-row input[type="number"]::-webkit-outer-spin-button,
+.form-row input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.form-row input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 .form-row input:focus,
