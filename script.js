@@ -119,17 +119,61 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => document.dispatchEvent(new CustomEvent('appresize')), 150);
 });
 
-// ---------- Tap-to-scroll for wide tables (mobile) ----------
+// ---------- Draggable scrollbar for wide tables (mobile) ----------
 // A horizontal swipe on a strip nested inside a vertically-scrolling page
 // is easy to fumble — the browser often reads it as page-scroll instead.
-// These buttons are the reliable fallback: each .scroll-hint's buttons
-// nudge the .table-wrap sitting right after it.
-document.querySelectorAll('.scroll-hint').forEach(hint => {
-  const wrap = hint.nextElementSibling;
-  if (!wrap || !wrap.classList.contains('table-wrap')) return;
-  hint.querySelectorAll('.scroll-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      wrap.scrollBy({ left: Number(btn.dataset.dir) * 220, behavior: 'smooth' });
-    });
+// This is the reliable fallback: a thumb (in .table-scroll-ui, sitting
+// right before the .table-wrap it controls) whose width shows how much
+// of the table is visible and which can be dragged directly. It also
+// stays in sync the other way — scrolling the table by swipe moves the
+// thumb too — and hides itself entirely if there's nothing to scroll.
+document.querySelectorAll('.table-scroll-ui').forEach(ui => {
+  const wrap = ui.nextElementSibling;
+  const track = ui.querySelector('.scroll-track');
+  const thumb = ui.querySelector('.scroll-thumb');
+  if (!wrap || !wrap.classList.contains('table-wrap') || !track || !thumb) return;
+
+  function updateThumb() {
+    const scrollable = wrap.scrollWidth - wrap.clientWidth;
+    if (scrollable <= 1) {
+      ui.style.display = 'none';
+      return;
+    }
+    ui.style.display = '';
+    const trackWidth = track.clientWidth;
+    const thumbWidth = Math.max(trackWidth * (wrap.clientWidth / wrap.scrollWidth), 24);
+    const maxThumbLeft = trackWidth - thumbWidth;
+    const thumbLeft = maxThumbLeft * (wrap.scrollLeft / scrollable);
+    thumb.style.width = thumbWidth + 'px';
+    thumb.style.transform = `translateX(${thumbLeft}px)`;
+  }
+
+  wrap.addEventListener('scroll', updateThumb, { passive: true });
+  window.addEventListener('resize', updateThumb);
+  document.addEventListener('appresize', updateThumb);
+  updateThumb();
+
+  let dragging = false, startX = 0, startScrollLeft = 0;
+  thumb.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    startX = e.clientX;
+    startScrollLeft = wrap.scrollLeft;
+    thumb.setPointerCapture(e.pointerId);
+  });
+  thumb.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const scrollable = wrap.scrollWidth - wrap.clientWidth;
+    const maxThumbLeft = track.clientWidth - thumb.offsetWidth;
+    if (maxThumbLeft <= 0) return;
+    wrap.scrollLeft = startScrollLeft + ((e.clientX - startX) / maxThumbLeft) * scrollable;
+  });
+  thumb.addEventListener('pointerup', () => { dragging = false; });
+
+  // Tapping the track itself (not the thumb) jumps straight to that spot.
+  track.addEventListener('pointerdown', (e) => {
+    if (e.target === thumb) return;
+    const rect = track.getBoundingClientRect();
+    const scrollable = wrap.scrollWidth - wrap.clientWidth;
+    wrap.scrollLeft = ((e.clientX - rect.left) / rect.width) * scrollable;
   });
 });
