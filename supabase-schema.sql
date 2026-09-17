@@ -17,9 +17,15 @@ create table if not exists bookings (
   remaining     numeric not null default 0,
   host_paid     text not null default '',   -- kept as text: sheet sometimes has "225000+185000"
   status        text not null default '',   -- '' or "DIDN'T STAY"
+  deleted_at    timestamptz,                -- null = active; set = in Trash, auto-purged 30 days after this
   user_id       uuid not null default auth.uid() references auth.users(id) on delete cascade
 );
 create index if not exists bookings_user_month_idx on bookings (user_id, month_key);
+
+-- Run this ALTER on a database created from an older version of this file
+-- (one that didn't yet have the Trash feature) to add the column without
+-- losing existing data:
+--   alter table bookings add column if not exists deleted_at timestamptz;
 
 create table if not exists custom_hosts (
   key       text primary key,

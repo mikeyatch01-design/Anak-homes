@@ -176,6 +176,7 @@ function allBookings(data) {
 // render code was written against synchronous loaders, and keeping that
 // contract avoids threading async/await through every render function.
 let _bookingsData = {};
+let _trashedBookings = [];
 let _customHosts = [];
 let _hiddenHostKeys = [];
 
@@ -194,8 +195,21 @@ function rowToBooking(row) {
     remaining: Number(row.remaining) || 0,
     hostPaid: row.host_paid || '',
     status: row.status || '',
+    deletedAt: row.deleted_at || null,
     _dbId: row.id,
+    _monthKey: row.month_key,
   };
+}
+
+const TRASH_RETENTION_DAYS = 30;
+
+// Whole days left before a trashed booking is auto-purged; 0 means it'll
+// be gone the next time anyone loads the app.
+function trashDaysLeft(deletedAt) {
+  if (!deletedAt) return TRASH_RETENTION_DAYS;
+  const elapsedMs = Date.now() - new Date(deletedAt).getTime();
+  const elapsedDays = Math.floor(elapsedMs / (24 * 60 * 60 * 1000));
+  return Math.max(TRASH_RETENTION_DAYS - elapsedDays, 0);
 }
 
 function bookingToRow(b, month) {
@@ -236,21 +250,43 @@ async function initAppData() {
   ]);
 
   _bookingsData = {};
+  _trashedBookings = [];
   (bookingsRes.data || []).forEach(row => {
-    const month = row.month_key;
-    (_bookingsData[month] = _bookingsData[month] || []).push(rowToBooking(row));
+    const b = rowToBooking(row);
+    if (row.deleted_at) {
+      _trashedBookings.push(b);
+    } else {
+      (_bookingsData[row.month_key] = _bookingsData[row.month_key] || []).push(b);
+    }
   });
   Object.keys(_bookingsData).forEach(month => {
     _bookingsData[month].sort((a, b) => (a.checkin || '').localeCompare(b.checkin || ''));
   });
+  _trashedBookings.sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''));
 
   _customHosts = (hostsRes.data || []).map(r => ({ key: r.key, name: r.name, icon: r.icon, keywords: r.keywords || [] }));
   _hiddenHostKeys = (hiddenRes.data || []).map(r => r.key);
+
+  purgeExpiredTrash();
 }
 
 function loadBookings() { return _bookingsData; }
+function loadTrashedBookings() { return _trashedBookings; }
 function loadCustomHosts() { return _customHosts; }
 function loadHiddenHostKeys() { return _hiddenHostKeys; }
+
+// Fire-and-forget: permanently removes anything that's been in the Trash
+// past its retention window. Runs once per page load rather than on a
+// server timer, since this is a static site with no backend cron — close
+// enough for a hobby app, and harmless if it finds nothing to do.
+async function purgeExpiredTrash() {
+  const cutoff = new Date(Date.now() - TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const expired = _trashedBookings.filter(b => b.deletedAt && b.deletedAt < cutoff);
+  if (!expired.length) return;
+  await sb.from('bookings').delete().lt('deleted_at', cutoff);
+  const expiredIds = new Set(expired.map(b => b._dbId));
+  _trashedBookings = _trashedBookings.filter(b => !expiredIds.has(b._dbId));
+}
 
 // Insert or update one booking row (update when `b._dbId` is set, insert
 // otherwise); also keeps the in-memory cache's copy of the row in sync.
@@ -260,9 +296,31 @@ async function upsertBooking(b, month) {
   return rowToBooking(data);
 }
 
-async function deleteBookingRemote(dbId) {
+// Deleting a booking moves it to the Trash (sets deleted_at) instead of
+// removing the row outright, so it can be restored within the retention
+// window. Also updates the in-memory trash cache so the Trash modal
+// reflects it immediately without a re-fetch.
+async function trashBookingRemote(dbId) {
+  const { data, error } = await sb.from('bookings').update({ deleted_at: new Date().toISOString() }).eq('id', dbId).select().single();
+  if (error) throw error;
+  const b = rowToBooking(data);
+  _trashedBookings.unshift(b);
+  return b;
+}
+
+async function restoreBookingRemote(dbId) {
+  const { data, error } = await sb.from('bookings').update({ deleted_at: null }).eq('id', dbId).select().single();
+  if (error) throw error;
+  const b = rowToBooking(data);
+  _trashedBookings = _trashedBookings.filter(t => t._dbId !== dbId);
+  (_bookingsData[b._monthKey] = _bookingsData[b._monthKey] || []).push(b);
+  return b;
+}
+
+async function deleteBookingForeverRemote(dbId) {
   const { error } = await sb.from('bookings').delete().eq('id', dbId);
   if (error) throw error;
+  _trashedBookings = _trashedBookings.filter(t => t._dbId !== dbId);
 }
 
 async function insertCustomHost(host) {
