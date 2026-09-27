@@ -751,11 +751,10 @@ body.dark-theme .card.touch-active {
      the page's own vertical scroll instead, since this sits inside a
      vertically-scrolling page. pan-x tells it to commit this element's
      gestures to horizontal panning, which is what actually makes swiping
-     the table itself work on a phone (the drag-bar below remains as a
-     fallback for anyone who still finds a diagonal swipe awkward). */
+     the table itself work on a phone. */
   touch-action: pan-x;
-  /* breathing room so the horizontal scrollbar doesn't sit flush
-     against the last row of the table */
+  /* breathing room so the bottom row/scrollbar doesn't sit flush against
+     the card's own edge */
   padding-bottom: 10px;
 }
 
@@ -777,41 +776,6 @@ body.dark-theme .card.touch-active {
   background: var(--card);
   z-index: 1;
 }
-
-/* Desktop already shows every column at once — this only exists on
-   phone, below the table, as a reliable way to move it: a swipe gesture
-   on a horizontally scrollable strip nested inside a vertically
-   scrolling page is easy to fumble (the browser often reads it as
-   page-scroll instead). Draggable directly, or tap anywhere on the
-   track to jump there; the thumb's width shows how much more there is. */
-.table-scroll-ui {
-  display: none;
-  margin: 8px 0 0;
-}
-@media (max-width: 760px) {
-  .table-scroll-ui { display: block; }
-}
-.scroll-track {
-  position: relative;
-  height: 14px;
-  padding: 4px 0;
-  border-radius: 8px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  background-clip: content-box;
-}
-.scroll-thumb {
-  position: absolute;
-  top: 4px;
-  left: 1px;
-  height: 6px;
-  min-width: 28px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--blue), var(--purple));
-  cursor: grab;
-  touch-action: none;
-}
-.scroll-thumb:active { cursor: grabbing; }
 
 table {
   width: 100%;
