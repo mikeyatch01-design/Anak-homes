@@ -1,6 +1,6 @@
 :root {
-  --blue: #3B82F6;
-  --purple: #A78BFA;
+  --blue: #BF5330;
+  --purple: #12897E;
   --bg-deep: #05070c;
   --panel: rgba(15, 20, 32, .72);
   --panel-border: rgba(148, 163, 184, .16);
@@ -163,7 +163,7 @@ body {
 
 .input-wrap:focus-within {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, .18);
+  box-shadow: 0 0 0 3px rgba(191, 83, 48, .18);
 }
 
 .input-wrap input {
@@ -216,12 +216,12 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: transform .15s ease, box-shadow .2s ease, opacity .2s ease;
-  box-shadow: 0 10px 24px rgba(59, 130, 246, .3);
+  box-shadow: 0 10px 24px rgba(191, 83, 48, .3);
 }
 
 .login-submit svg { width: 16px; height: 16px; transition: transform .2s ease; }
 .login-submit:hover svg { transform: translateX(3px); }
-.login-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(59, 130, 246, .4); }
+.login-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(191, 83, 48, .4); }
 .login-submit:active { transform: translateY(0) scale(.98); }
 .login-submit:disabled { opacity: .6; cursor: default; transform: none; }
 

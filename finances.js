@@ -321,7 +321,7 @@ let incomePoints = [];
 
 function renderIncomeChart() {
   const income = incomeDataSets[incomeMode];
-  incomePoints = drawLineChart('lineChart', income.labels, income.data, '#A78BFA', income.axisStep, incomeHoverIndex);
+  incomePoints = drawLineChart('lineChart', income.labels, income.data, '#12897E', income.axisStep, incomeHoverIndex);
 }
 
 function redrawAllCharts() {
@@ -329,14 +329,14 @@ function redrawAllCharts() {
   // Same underlying split feeds both donuts — they're two views of the
   // same booking pool (full paid vs half paid), so they stay in sync.
   const paymentSplitSegments = [
-    { value: split.fullCount, color: '#3B82F6' }, // Full paid
+    { value: split.fullCount, color: '#BF5330' }, // Full paid
     { value: split.halfCount, color: '#F5B942' }, // Half paid
   ];
   drawDonut('donutBookings', paymentSplitSegments);
   drawDonut('donutUnpaid', paymentSplitSegments);
 
   const bookings = bookingsDataSets[bookingsMode];
-  drawBarChart('barChart', bookings.labels, bookings.data, '#3B82F6', 10);
+  drawBarChart('barChart', bookings.labels, bookings.data, '#BF5330', 10);
 
   renderIncomeChart();
 }

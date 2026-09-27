@@ -4,13 +4,18 @@
   --text: #111827;
   --text-muted: #6B7280;
   --border: #EEF0F4;
-  --blue: #3B82F6;
-  --blue-light: #BFDBFE;
-  --purple: #A78BFA;
-  --amber: #F5B942;
+  /* Warm terracotta + teal — a hospitality palette instead of the generic
+     SaaS blue/violet this started as. Both hold better text contrast than
+     the colors they replace (terracotta 4.67:1 vs white, was 3.68:1;
+     teal 4.28:1 vs white, was 2.72:1) while reading warmer and more like
+     Anak Homes than a fintech dashboard. Variable names kept as --blue/
+     --purple since ~30 rules already reference them by name — only the
+     values changed. */
+  --blue: #BF5330;
+  --blue-light: #F6D9CC;
+  --purple: #12897E;
   --green: #22C55E;
   --red: #EF4444;
-  --pink: #EC4899;
   --shadow: 0 4px 20px rgba(17, 24, 39, 0.05);
   --radius-card: 16px;   /* consistent card radius, 12-16px */
   --radius-md: 12px;
@@ -47,6 +52,18 @@ body {
   transition: background .25s ease, color .25s ease;
 }
 
+/* ---------- Browser surfaces ---------- */
+/* Selection, scrollbar and focus ring left on browser defaults are the
+   fastest tell that a screen was assembled rather than built — themed
+   here so they carry the new palette like everything else does. */
+::selection { background: var(--blue); color: #fff; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+* { scrollbar-width: thin; scrollbar-color: var(--text-muted) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 20px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
 .app {
   display: flex;
   min-height: 100vh;
@@ -81,7 +98,7 @@ body {
   border: none;
   background: linear-gradient(135deg, var(--blue), var(--purple));
   color: #fff;
-  box-shadow: 0 3px 10px rgba(59, 130, 246, .4);
+  box-shadow: 0 3px 10px rgba(191, 83, 48, .4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,7 +109,7 @@ body {
 
 .sidebar-collapse-toggle:hover {
   transform: scale(1.18) rotate(-10deg);
-  box-shadow: 0 5px 16px rgba(59, 130, 246, .55);
+  box-shadow: 0 5px 16px rgba(191, 83, 48, .55);
 }
 
 .sidebar-collapse-toggle:active { transform: scale(.8); }
@@ -221,12 +238,12 @@ body {
 
 .nav-item.active {
   background: var(--blue-light);
-  color: #1D4ED8;
+  color: #7A3418;
 }
 
 body.dark-theme .nav-item.active {
-  background: rgba(59, 130, 246, 0.18);
-  color: #93C5FD;
+  background: rgba(191, 83, 48, 0.18);
+  color: #F2C2AC;
 }
 
 .nav-icon {
@@ -331,12 +348,12 @@ body.dark-theme .theme-toggle .dot { transform: translateX(2px); }
 .card:focus-within,
 .card.touch-active {
   transform: translateY(-6px);
-  box-shadow: 0 22px 45px -12px rgba(59, 130, 246, .35), 0 10px 20px rgba(17, 24, 39, .08);
+  box-shadow: 0 22px 45px -12px rgba(191, 83, 48, .35), 0 10px 20px rgba(17, 24, 39, .08);
 }
 
 body.dark-theme .card:focus-within,
 body.dark-theme .card.touch-active {
-  box-shadow: 0 22px 45px -10px rgba(59, 130, 246, .45), 0 10px 24px rgba(0, 0, 0, .5);
+  box-shadow: 0 22px 45px -10px rgba(191, 83, 48, .45), 0 10px 24px rgba(0, 0, 0, .5);
 }
 
 /* :hover scoped to real pointer devices — touch already gets the same
@@ -345,11 +362,11 @@ body.dark-theme .card.touch-active {
 @media (hover: hover) and (pointer: fine) {
   .card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 22px 45px -12px rgba(59, 130, 246, .35), 0 10px 20px rgba(17, 24, 39, .08);
+    box-shadow: 0 22px 45px -12px rgba(191, 83, 48, .35), 0 10px 20px rgba(17, 24, 39, .08);
   }
 
   body.dark-theme .card:hover {
-    box-shadow: 0 22px 45px -10px rgba(59, 130, 246, .45), 0 10px 24px rgba(0, 0, 0, .5);
+    box-shadow: 0 22px 45px -10px rgba(191, 83, 48, .45), 0 10px 24px rgba(0, 0, 0, .5);
   }
 }
 
@@ -714,6 +731,15 @@ body.dark-theme .card.touch-active {
 .table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  /* A finger-swipe that starts on this element is rarely perfectly
+     horizontal, and the default touch-action lets the browser resolve
+     that ambiguity however it wants — in practice it almost always picks
+     the page's own vertical scroll instead, since this sits inside a
+     vertically-scrolling page. pan-x tells it to commit this element's
+     gestures to horizontal panning, which is what actually makes swiping
+     the table itself work on a phone (the drag-bar below remains as a
+     fallback for anyone who still finds a diagonal swipe awkward). */
+  touch-action: pan-x;
   /* breathing room so the horizontal scrollbar doesn't sit flush
      against the last row of the table */
   padding-bottom: 10px;
@@ -734,17 +760,19 @@ body.dark-theme .card.touch-active {
 }
 .scroll-track {
   position: relative;
-  height: 10px;
-  border-radius: 6px;
+  height: 14px;
+  padding: 4px 0;
+  border-radius: 8px;
   background: var(--bg);
   border: 1px solid var(--border);
+  background-clip: content-box;
 }
 .scroll-thumb {
   position: absolute;
-  top: 1px;
+  top: 4px;
   left: 1px;
   height: 6px;
-  min-width: 24px;
+  min-width: 28px;
   border-radius: 4px;
   background: linear-gradient(90deg, var(--blue), var(--purple));
   cursor: grab;
@@ -784,7 +812,7 @@ tbody tr {
   height: 22px;
   border-radius: 50%;
   background: var(--blue-light);
-  color: #1D4ED8;
+  color: #7A3418;
   font-size: 10px;
   font-weight: 700;
   margin-right: 8px;
@@ -798,9 +826,9 @@ tbody tr {
 }
 
 .status.delivered { background: rgba(34,197,94,.12); color: var(--green); }
-.status.processed { background: rgba(59,130,246,.12); color: var(--blue); }
+.status.processed { background: rgba(191, 83, 48,.12); color: var(--blue); }
 .status.cancelled { background: rgba(239,68,68,.12); color: var(--red); }
-.status.upcoming { background: rgba(167,139,250,.16); color: var(--purple); }
+.status.upcoming { background: rgba(18, 137, 126,.16); color: var(--purple); }
 
 td.amount-owed { color: var(--red); font-weight: 700; }
 
@@ -811,7 +839,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
-  background: rgba(59,130,246,.12);
+  background: rgba(191, 83, 48,.12);
   color: var(--blue);
   white-space: nowrap;
 }
@@ -916,10 +944,10 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 }
 
 .total-chip.c-total .total-chip-icon,
-.total-chip.c-paid .total-chip-icon { background: rgba(59, 130, 246, .14); color: var(--blue); }
+.total-chip.c-paid .total-chip-icon { background: rgba(191, 83, 48, .14); color: var(--blue); }
 
 .total-chip.c-host .total-chip-icon,
-.total-chip.c-hostpaid .total-chip-icon { background: rgba(167, 139, 250, .16); color: var(--purple); }
+.total-chip.c-hostpaid .total-chip-icon { background: rgba(18, 137, 126, .16); color: var(--purple); }
 
 .total-chip.c-commission .total-chip-icon { background: rgba(34, 197, 94, .14); color: var(--green); }
 
@@ -996,6 +1024,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 
 .page-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 12px;
   margin-bottom: 20px;
@@ -1011,6 +1040,16 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   font-size: 13.5px;
   font-family: inherit;
   cursor: pointer;
+}
+
+/* On a narrow screen the three controls no longer fit on one line even
+   wrapped loosely (flex-end would still right-align each wrapped line,
+   which reads oddly for a 1-then-2 split) — stack them full-width instead. */
+@media (max-width: 560px) {
+  .page-toolbar { flex-direction: column; align-items: stretch; }
+  .sort-select,
+  .page-toolbar .month-picker-btn,
+  .page-toolbar > .btn-primary { width: 100%; }
 }
 
 /* ---------- Trash ---------- */
@@ -1354,14 +1393,14 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 .host-card:focus,
 .host-card.show {
   transform: translateY(-6px);
-  box-shadow: 0 22px 45px -12px rgba(59, 130, 246, .35), 0 10px 20px rgba(17, 24, 39, .08);
+  box-shadow: 0 22px 45px -12px rgba(191, 83, 48, .35), 0 10px 20px rgba(17, 24, 39, .08);
   outline: none;
   z-index: 10;
 }
 
 body.dark-theme .host-card:focus,
 body.dark-theme .host-card.show {
-  box-shadow: 0 22px 45px -10px rgba(59, 130, 246, .45), 0 10px 24px rgba(0, 0, 0, .5);
+  box-shadow: 0 22px 45px -10px rgba(191, 83, 48, .45), 0 10px 24px rgba(0, 0, 0, .5);
 }
 
 /* :hover is scoped to real pointer devices only — touch would fire a
@@ -1372,12 +1411,12 @@ body.dark-theme .host-card.show {
 @media (hover: hover) and (pointer: fine) {
   .host-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 22px 45px -12px rgba(59, 130, 246, .35), 0 10px 20px rgba(17, 24, 39, .08);
+    box-shadow: 0 22px 45px -12px rgba(191, 83, 48, .35), 0 10px 20px rgba(17, 24, 39, .08);
     z-index: 10;
   }
 
   body.dark-theme .host-card:hover {
-    box-shadow: 0 22px 45px -10px rgba(59, 130, 246, .45), 0 10px 24px rgba(0, 0, 0, .5);
+    box-shadow: 0 22px 45px -10px rgba(191, 83, 48, .45), 0 10px 24px rgba(0, 0, 0, .5);
   }
 }
 
@@ -1571,7 +1610,7 @@ body.dark-theme .host-card.show {
 .hcal-cell.empty { visibility: hidden; }
 
 .hcal-cell.has-guest {
-  background: rgba(59,130,246,.12);
+  background: rgba(191, 83, 48,.12);
   color: var(--blue);
   font-weight: 700;
   cursor: default;
@@ -1749,6 +1788,13 @@ body.dark-theme .host-card.show {
 
   .sidebar-toggle { display: flex; }
   .sidebar-collapse-toggle { display: none; }
+
+  /* The toggle button is fixed at top:18/left:18, 40px square — sitting
+     right on top of the sidebar's own logo once the drawer opens (its
+     z-index has to stay above the sidebar so it still works as a close
+     button). Shifting the logo clear of that footprint is simpler and
+     safer than restructuring either element's positioning. */
+  .sidebar.open .logo { padding-left: 46px; }
 
   .sidebar {
     position: fixed;
