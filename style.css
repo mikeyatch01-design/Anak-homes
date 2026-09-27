@@ -21,6 +21,20 @@
   --radius-md: 12px;
   --sidebar-w: 240px;
   --sidebar-w-collapsed: 76px;
+
+  /* Type scale — replaces 18 near-duplicate one-off sizes (10px, 10.5px,
+     11.5px, 12.5px, 13.5px, 15.5px...) that had accumulated with no real
+     steps between them. Every font-size below should reference one of
+     these nine. */
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-2xl: 26px;
+  --fs-3xl: 28px;
 }
 
 body.dark-theme {
@@ -172,7 +186,7 @@ body {
   align-items: center;
   gap: 10px;
   font-weight: 800;
-  font-size: 18px;
+  font-size: var(--fs-lg);
   flex-shrink: 0;
 }
 
@@ -225,7 +239,7 @@ body {
   color: var(--text-muted);
   text-decoration: none;
   font-weight: 500;
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1.2;
   white-space: nowrap;
   transition: background .15s ease, color .15s ease;
@@ -269,14 +283,14 @@ body.dark-theme .nav-item.active {
 }
 
 .topbar-title h1 {
-  font-size: 26px;
+  font-size: var(--fs-2xl);
   font-weight: 700;
   margin: 0;
 }
 
 .welcome {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--fs-base);
   color: var(--text-muted);
 }
 
@@ -296,7 +310,7 @@ body.dark-theme .nav-item.active {
   border-radius: 20px;
   padding: 6px 10px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   user-select: none;
 }
 
@@ -316,7 +330,7 @@ body.dark-theme .theme-toggle .dot { transform: translateX(2px); }
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   white-space: nowrap;
 }
 
@@ -329,7 +343,7 @@ body.dark-theme .theme-toggle .dot { transform: translateX(2px); }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -383,21 +397,21 @@ body.dark-theme .card.touch-active {
 }
 
 .summary-label {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: 8px;
 }
 
 .summary-value {
-  font-size: 28px;
+  font-size: var(--fs-3xl);
   font-weight: 800;
   margin-bottom: 8px;
   overflow-wrap: break-word;
 }
 
 .delta {
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 
@@ -425,7 +439,7 @@ body.dark-theme .card.touch-active {
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text-muted);
   font-weight: 600;
 }
@@ -438,12 +452,12 @@ body.dark-theme .card.touch-active {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   flex-shrink: 0;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: var(--fs-2xl);
   font-weight: 800;
   margin-bottom: 6px;
   overflow-wrap: break-word;
@@ -478,7 +492,7 @@ body.dark-theme .card.touch-active {
 
 .donut-total {
   display: block;
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 800;
   line-height: 1.15;
   white-space: nowrap;
@@ -486,7 +500,7 @@ body.dark-theme .card.touch-active {
 
 .donut-sub {
   display: block;
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   color: var(--text-muted);
   font-weight: 500;
   margin-top: 3px;
@@ -496,7 +510,7 @@ body.dark-theme .card.touch-active {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   text-align: center;
 }
@@ -505,7 +519,7 @@ body.dark-theme .card.touch-active {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   display: flex;
   flex-direction: column;
@@ -578,7 +592,7 @@ body.dark-theme .card.touch-active {
   box-shadow: var(--shadow);
   border-radius: 8px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
   white-space: nowrap;
   pointer-events: none;
@@ -593,7 +607,7 @@ body.dark-theme .card.touch-active {
   display: block;
   color: var(--text-muted);
   font-weight: 500;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
 }
 
 .chart-tooltip .tt-value {
@@ -610,7 +624,7 @@ body.dark-theme .card.touch-active {
 }
 
 .card-header h2 {
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-weight: 700;
   margin: 0;
 }
@@ -629,7 +643,7 @@ body.dark-theme .card.touch-active {
   background: transparent;
   padding: 5px 12px;
   border-radius: 16px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   font-family: inherit;
   color: var(--text-muted);
@@ -673,20 +687,20 @@ body.dark-theme .card.touch-active {
 }
 
 .ring-label {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text-muted);
   font-weight: 600;
 }
 
 .ring-value {
-  font-size: 19px;
+  font-size: var(--fs-xl);
   font-weight: 800;
   margin: 4px 0;
   overflow-wrap: break-word;
 }
 
 .muted { color: var(--text-muted); }
-.small { font-size: 12px; }
+.small { font-size: var(--fs-xs); }
 
 /* per-host breakdown under Paid to Host / Unpaid to Host */
 .host-mini-list {
@@ -704,7 +718,7 @@ body.dark-theme .card.touch-active {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
 }
 
 .host-mini-name {
@@ -723,7 +737,7 @@ body.dark-theme .card.touch-active {
 
 .host-mini-empty {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 /* table */
@@ -743,6 +757,25 @@ body.dark-theme .card.touch-active {
   /* breathing room so the horizontal scrollbar doesn't sit flush
      against the last row of the table */
   padding-bottom: 10px;
+}
+
+/* On the two dashboard tables (Bookings' own list, and the Finances page's
+   "Booking Activity" feed) a long list used to push the whole page down —
+   the totals/KPI cards above it scrolled out of view along with everything
+   else. Capping the row area and letting it scroll internally keeps the
+   card's own header/totals in place while only the rows move; the column
+   headers stay pinned via position:sticky so they don't scroll away too.
+   Scoped to .card (not every .table-wrap — the trash/edit modals also use
+   this markup and should keep their own natural height). */
+.card .table-wrap {
+  max-height: 420px;
+  overflow-y: auto;
+}
+.card .table-wrap thead th {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  z-index: 1;
 }
 
 /* Desktop already shows every column at once — this only exists on
@@ -783,7 +816,7 @@ body.dark-theme .card.touch-active {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 thead th {
@@ -813,7 +846,7 @@ tbody tr {
   border-radius: 50%;
   background: var(--blue-light);
   color: #7A3418;
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   margin-right: 8px;
 }
@@ -821,7 +854,7 @@ tbody tr {
 .status {
   padding: 3px 10px;
   border-radius: 20px;
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 
@@ -837,7 +870,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   background: rgba(191, 83, 48,.12);
   color: var(--blue);
@@ -858,7 +891,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   padding: 18px 0;
   text-align: center;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* ---------- Totals panel (Bookings page) ---------- */
@@ -877,12 +910,12 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 }
 
 .totals-panel-title {
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
 .totals-panel-sub {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
 }
 
@@ -920,12 +953,12 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   flex-shrink: 0;
 }
 
 .total-chip-label {
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -936,7 +969,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 }
 
 .total-chip-value {
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
@@ -987,7 +1020,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   padding: 10px 18px;
   border-radius: 10px;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   cursor: pointer;
   transition: background .15s ease;
@@ -1002,7 +1035,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   padding: 10px 18px;
   border-radius: 10px;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   cursor: pointer;
   transition: background .15s ease;
@@ -1017,7 +1050,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   padding: 10px 14px;
   border-radius: 10px;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   cursor: pointer;
 }
@@ -1037,7 +1070,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   padding: 10px 14px;
   border-radius: 10px;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   cursor: pointer;
 }
@@ -1085,7 +1118,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   border-radius: 9px;
   background: var(--red);
   color: #fff;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -1107,7 +1140,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   padding: 10px 16px;
   border-radius: 10px;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   cursor: pointer;
 }
@@ -1144,7 +1177,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   color: var(--text);
   padding: 9px 6px;
   border-radius: 8px;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -1171,7 +1204,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   color: var(--text);
   cursor: pointer;
 }
@@ -1211,7 +1244,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 .modal-card-wide { max-width: 620px; }
 
 .form-hint {
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   margin: -6px 0 14px;
 }
@@ -1229,7 +1262,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   border-radius: 12px;
   text-align: center;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   letter-spacing: .04em;
   color: var(--text);
@@ -1240,7 +1273,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text-muted);
   cursor: pointer;
   margin-top: 4px;
@@ -1256,7 +1289,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 }
 
 .modal-header h2 {
-  font-size: 17px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   margin: 0;
 }
@@ -1268,7 +1301,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  font-size: 16px;
+  font-size: var(--fs-md);
   line-height: 1;
   cursor: pointer;
 }
@@ -1287,7 +1320,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -1301,7 +1334,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   padding: 9px 12px;
   /* 16px, not smaller — iOS Safari auto-zooms the page on focus for any
      input under 16px, which is jarring in these forms on a phone. */
-  font-size: 16px;
+  font-size: var(--fs-md);
   font-family: inherit;
 }
 
@@ -1420,15 +1453,15 @@ body.dark-theme .host-card.show {
   }
 }
 
-.host-icon { font-size: 24px; margin-bottom: 8px; }
+.host-icon { font-size: var(--fs-2xl); margin-bottom: 8px; }
 
 .host-name {
   font-weight: 700;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
 }
 
 .host-count {
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--text-muted);
   margin-top: 4px;
 }
@@ -1443,7 +1476,7 @@ body.dark-theme .host-card.show {
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1;
   cursor: pointer;
   opacity: 0;
@@ -1520,7 +1553,7 @@ body.dark-theme .host-card.show {
 
 .host-popup-title {
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   margin-bottom: 8px;
 }
 
@@ -1528,7 +1561,7 @@ body.dark-theme .host-card.show {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   padding: 3px 0;
 }
@@ -1543,7 +1576,7 @@ body.dark-theme .host-card.show {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   text-align: right;
 }
@@ -1573,7 +1606,7 @@ body.dark-theme .host-card.show {
 .hcal-nav-btn svg { width: 15px; height: 15px; }
 
 .hcal-month-label {
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 700;
 }
 
@@ -1585,7 +1618,7 @@ body.dark-theme .host-card.show {
 
 .hcal-weekdays span {
   text-align: center;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -1603,7 +1636,7 @@ body.dark-theme .host-card.show {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: var(--text);
 }
 
@@ -1631,7 +1664,7 @@ body.dark-theme .host-card.show {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   text-align: center;
 }
@@ -1653,13 +1686,13 @@ body.dark-theme .host-card.show {
 }
 
 .settings-card-title {
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-weight: 700;
   margin: 0 0 6px;
 }
 
 .settings-card-desc {
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   line-height: 1.5;
   margin: 0 0 16px;
@@ -1674,7 +1707,7 @@ body.dark-theme .host-card.show {
 }
 
 .settings-saved {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--green);
   opacity: 0;
@@ -1685,7 +1718,7 @@ body.dark-theme .host-card.show {
 
 .settings-note {
   margin-top: 12px;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
 }
 
@@ -1704,7 +1737,7 @@ body.dark-theme .host-card.show {
   padding: 10px 18px;
   border-radius: 10px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   transition: background .15s ease, border-color .15s ease, color .15s ease;
@@ -1717,7 +1750,7 @@ body.dark-theme .host-card.show {
 }
 
 .security-status {
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 20px;
@@ -1733,7 +1766,7 @@ body.dark-theme .host-card.show {
 
 .security-error {
   min-height: 16px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--red);
   margin-top: 4px;
@@ -1811,7 +1844,7 @@ body.dark-theme .host-card.show {
   .overlay.show { display: block; }
 
   .main { padding: 80px 18px 40px; }
-  .topbar-title h1 { font-size: 22px; }
+  .topbar-title h1 { font-size: var(--fs-xl); }
 }
 
 /* Phone portrait — everything above only cuts down to fewer *columns* of
@@ -1826,19 +1859,19 @@ body.dark-theme .host-card.show {
   .summary-grid, .stats-grid, .charts-grid { gap: 12px; margin-bottom: 16px; }
 
   .card { padding: 16px; }
-  .summary-value { font-size: 22px; }
-  .stat-value { font-size: 19px; }
-  .stat-icon { width: 24px; height: 24px; font-size: 12px; }
-  .ring-icon { width: 26px; height: 26px; border-radius: 8px; font-size: 13px; }
-  .topbar-title h1 { font-size: 19px; }
-  .welcome { font-size: 13px; }
-  .ring-value { font-size: 17px; }
+  .summary-value { font-size: var(--fs-xl); }
+  .stat-value { font-size: var(--fs-xl); }
+  .stat-icon { width: 24px; height: 24px; font-size: var(--fs-xs); }
+  .ring-icon { width: 26px; height: 26px; border-radius: 8px; font-size: var(--fs-sm); }
+  .topbar-title h1 { font-size: var(--fs-xl); }
+  .welcome { font-size: var(--fs-sm); }
+  .ring-value { font-size: var(--fs-lg); }
 
   .chart-wrap { height: 180px; }
   .donut-wrap { width: 116px; height: 116px; margin: 6px auto 10px; }
 
   .modal-card { padding: 18px; }
-  .modal-header h2 { font-size: 15.5px; }
+  .modal-header h2 { font-size: var(--fs-md); }
   /* Two fields side by side in an already-narrow modal leaves each one
      ~140px wide — too tight to read/tap comfortably, so stack them. */
   .form-row.two-col { grid-template-columns: 1fr; }

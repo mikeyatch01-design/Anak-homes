@@ -48,7 +48,13 @@ if (sidebarCollapseToggle) {
 }
 
 // ---------- Floating glow on touch (hover already covered by CSS) ----------
-document.querySelectorAll('.card').forEach(card => {
+// Excludes cards with a scrollable table inside (:has(.table-wrap)) — a
+// finger landing on a table row to start a horizontal swipe was also
+// triggering this card's translateY(-6px) lift at the same time, and the
+// two competing transforms made the swipe gesture itself read as
+// ambiguous/jumpy. The lift adds little to a data table anyway; it's the
+// simple KPI/ring cards where it's worth keeping.
+document.querySelectorAll('.card:not(:has(.table-wrap))').forEach(card => {
   card.addEventListener('touchstart', () => card.classList.add('touch-active'), { passive: true });
   card.addEventListener('touchend', () => card.classList.remove('touch-active'));
   card.addEventListener('touchcancel', () => card.classList.remove('touch-active'));

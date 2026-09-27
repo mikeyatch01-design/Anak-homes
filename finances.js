@@ -261,7 +261,10 @@ function renderBookingsFeed() {
   if (!tbody) return;
   lastCheckinRenderDate = new Date().toDateString();
 
-  const rows = bookingsFeed(8);
+  // Was capped at 8 to fit on one screen; the card now scrolls internally
+  // (see .card .table-wrap in style.css), so this can show a much fuller
+  // picture — scrolling within the card, not hard-truncating the list.
+  const rows = bookingsFeed(25);
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="checkin-empty">No bookings to show.</td></tr>`;
     return;
