@@ -629,7 +629,7 @@ body.dark-theme .card.touch-active {
   margin: 0;
 }
 
-.toggle-group, .month-tabs {
+.toggle-group {
   display: flex;
   align-items: center;
   background: var(--bg);
@@ -1218,33 +1218,6 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   background: var(--border);
 }
 
-.recovery-code-display {
-  margin: 16px 0;
-  padding: 16px;
-  background: var(--bg);
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  text-align: center;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  letter-spacing: .04em;
-  color: var(--text);
-  word-break: break-all;
-}
-
-.recovery-confirm {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-  cursor: pointer;
-  margin-top: 4px;
-}
-
-.recovery-confirm input { cursor: pointer; }
-
 .modal-header {
   display: flex;
   align-items: center;
@@ -1669,16 +1642,6 @@ body.dark-theme .host-card.show {
   flex-wrap: wrap;
   margin-top: 16px;
 }
-
-.settings-saved {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--green);
-  opacity: 0;
-  transition: opacity .2s ease;
-}
-
-.settings-saved:not(:empty) { opacity: 1; }
 
 .settings-note {
   margin-top: 12px;
