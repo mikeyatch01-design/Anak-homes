@@ -297,12 +297,13 @@
     return 'B' + String(maxNum + 1).padStart(3, '0');
   }
 
-  // Keeps host share (90%) and commission (10%) in sync with the total
-  // price, matching the 10% commission rate used throughout the sheet.
-  function applySplit() {
+  // Commission is always whatever's left after the host's share — not a
+  // fixed 10%, since the split isn't the same on every booking. Host
+  // share is typed in by hand; commission just follows it.
+  function applyCommission() {
     const total = Number(fTotal.value) || 0;
-    fHostShare.value = Math.round(total * 0.9);
-    fCommission.value = Math.round(total * 0.1);
+    const hostShare = Number(fHostShare.value) || 0;
+    fCommission.value = Math.max(total - hostShare, 0);
   }
 
   function applyRemaining() {
@@ -311,7 +312,8 @@
     fRemaining.value = Math.max(total - paid, 0);
   }
 
-  fTotal.addEventListener('input', () => { applySplit(); applyRemaining(); });
+  fTotal.addEventListener('input', () => { applyCommission(); applyRemaining(); });
+  fHostShare.addEventListener('input', applyCommission);
   fAmountPaid.addEventListener('input', applyRemaining);
 
   // The booking's month is always the check-in date's month, never a
@@ -356,6 +358,72 @@
   }
 
   if (addBookingBtn) addBookingBtn.addEventListener('click', () => openModal(null));
+
+  // ---------- Import from Excel ----------
+  // Parsing/saving lives in data.js (shared data-layer code); this just
+  // wires it to the button and shows where the imported rows landed.
+  // Month is always read from each row's own Check-in date — never typed
+  // or chosen here — so it can't end up filed under the wrong month.
+  const importBookingsInput = document.getElementById('importBookingsInput');
+  const importNote = document.getElementById('importNote');
+
+  function showImportNote(message, isError) {
+    if (!importNote) return;
+    importNote.textContent = message;
+    importNote.className = 'settings-note' + (isError ? ' error' : '');
+  }
+
+  if (importBookingsInput) {
+    importBookingsInput.addEventListener('change', async () => {
+      const file = importBookingsInput.files[0];
+      if (!file) return;
+
+      try {
+        showImportNote('Reading file…', false);
+        const { rows, skipped } = await parseExcelBookingsFile(file);
+
+        if (!rows.length) {
+          showImportNote(
+            skipped
+              ? `Found ${skipped} row${skipped === 1 ? '' : 's'} but none had a Check-in date, so nothing could be filed into a month.`
+              : 'No bookings found in that file — check it has Guest and Check-in columns filled in.',
+            true
+          );
+          return;
+        }
+
+        const monthsInFile = Array.from(new Set(rows.map(r => r.month))).sort().map(monthLabel).join(', ');
+        if (!confirm(`Import ${rows.length} booking${rows.length === 1 ? '' : 's'} into ${monthsInFile}? Rows matching an existing booking (same ID and month) will be updated; the rest will be added.`)) {
+          return;
+        }
+
+        showImportNote('Importing…', false);
+        const result = await saveImportedBookings(rows, (done, total) => showImportNote(`Importing… ${done}/${total}`, false));
+
+        const monthNames = result.months.map(monthLabel).join(', ');
+        let summary = `Imported ${result.done} booking${result.done === 1 ? '' : 's'} into ${monthNames}.`;
+        if (result.failed) summary += ` ${result.failed} failed — check the console for details.`;
+        if (skipped) summary += ` ${skipped} row${skipped === 1 ? '' : 's'} skipped (no check-in date).`;
+        showImportNote(summary, result.failed > 0);
+
+        // Jump straight to where the bookings landed when it's a single
+        // month — with several months touched, jumping would just hide
+        // the others, so stay put and let the message above name them all.
+        if (result.months.length === 1) {
+          selectMonth(result.months[0]);
+        } else {
+          renderMonthPickerMenu();
+          renderBookings();
+        }
+      } catch (err) {
+        console.error('Excel import failed:', err);
+        showImportNote('Import failed: ' + (err && err.message ? err.message : err), true);
+      } finally {
+        importBookingsInput.value = '';
+      }
+    });
+  }
+
   if (modalClose) modalClose.addEventListener('click', closeModal);
   if (modalCancel) modalCancel.addEventListener('click', closeModal);
   if (modalOverlay) {

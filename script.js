@@ -105,6 +105,40 @@ darkMediaQuery.addEventListener('change', () => {
 });
 initTheme();
 
+// ---------- Page background photo (day/night, per page) ----------
+// Each page declares its own pair via data-bg-day / data-bg-night on
+// <body> (login.html has its own separate background and doesn't use
+// this). Only the photo matching the CURRENT theme is ever fetched —
+// the other is loaded only if the user actually switches theme while
+// on the page, via the existing 'themechange' event.
+(function initPageBg() {
+  const bg = document.getElementById('pageBg');
+  if (!bg) return;
+  const dayUrl = document.body.dataset.bgDay;
+  const nightUrl = document.body.dataset.bgNight;
+  if (!dayUrl || !nightUrl) return;
+
+  function setBg(isDark) {
+    const url = isDark ? nightUrl : dayUrl;
+    if (bg.dataset.current === url) return;
+    bg.dataset.current = url;
+    bg.classList.remove('is-loaded');
+    const img = new Image();
+    img.onload = () => {
+      if (bg.dataset.current !== url) return; // theme flipped again before this finished loading
+      bg.style.backgroundImage = `url("${url}")`;
+      bg.classList.add('is-loaded');
+    };
+    img.src = url;
+  }
+
+  setBg(document.body.classList.contains('dark-theme'));
+  document.addEventListener('themechange', () => {
+    setBg(document.body.classList.contains('dark-theme'));
+  });
+})();
+
+
 // ---------- Profile (fixed name shown in the sidebar user chip) ----------
 const DISPLAY_NAME = 'Anak';
 function applyProfile() {

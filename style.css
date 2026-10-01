@@ -4,19 +4,24 @@
   --text: #111827;
   --text-muted: #6B7280;
   --border: #EEF0F4;
-  /* Warm terracotta + teal — a hospitality palette instead of the generic
-     SaaS blue/violet this started as. Both hold better text contrast than
-     the colors they replace (terracotta 4.67:1 vs white, was 3.68:1;
-     teal 4.28:1 vs white, was 2.72:1) while reading warmer and more like
-     Anak Homes than a fintech dashboard. Variable names kept as --blue/
-     --purple since ~30 rules already reference them by name — only the
-     values changed. */
-  --blue: #BF5330;
-  --blue-light: #F6D9CC;
+  /* Slate blue + teal (was terracotta + teal — swapped per Malik's request,
+     he didn't want the warm/gold-reading accent). --blue-light is a matching
+     light tint of the new blue for chip/badge backgrounds. Variable names
+     kept as --blue/--purple since ~30 rules already reference them by
+     name — only the values changed. */
+  --blue: #4F81AF;
+  --blue-light: #DAE6F1;
   --purple: #12897E;
   --green: #22C55E;
   --red: #EF4444;
   --shadow: 0 4px 20px rgba(17, 24, 39, 0.05);
+  /* Frosted-glass surfaces — the modal, the month picker, form fields —
+     a translucent tint of --card meant to sit over backdrop-filter:blur,
+     not --card itself (which stays a flat opaque surface for ordinary
+     cards). */
+  --glass: rgba(255, 255, 255, .68);
+  --glass-border: rgba(17, 24, 39, .08);
+  --glass-shadow: 0 16px 40px -12px rgba(17, 24, 39, .18);
   --radius-card: 16px;   /* consistent card radius, 12-16px */
   --radius-md: 12px;
   --sidebar-w: 240px;
@@ -44,6 +49,9 @@ body.dark-theme {
   --text-muted: #9CA3AF;
   --border: #262A36;
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --glass: rgba(23, 26, 35, .62);
+  --glass-border: rgba(255, 255, 255, .08);
+  --glass-shadow: 0 16px 40px -12px rgba(0, 0, 0, .55);
 }
 
 * { box-sizing: border-box; }
@@ -81,6 +89,52 @@ body {
 .app {
   display: flex;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Page background photo (day/night, per page) ---------- */
+/* Each page declares its own pair via data-bg-day/data-bg-night on
+   <body> (see script.js's initPageBg) — only the photo matching the
+   CURRENT theme is ever fetched. Sits behind .app at a fixed, negative
+   z-index; cards are fully opaque (--card), so the photo only ever
+   shows through in the gutters between them — deliberately subtle,
+   not competing with real data on Bookings/Settings. The overlay tints
+   toward the theme's own --bg color rather than a flat black scrim, so
+   it reads as an enrichment of the existing background, not a separate
+   dark layer on top of it. */
+.page-bg {
+  position: fixed;
+  inset: -30px;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+/* Host's night photo (the villa-at-night shot) stays sharp — excluded via
+   its own data-bg-night value since that's the only per-page hook this
+   layer has. */
+body.dark-theme .page-bg { filter: blur(30px); }
+body.dark-theme[data-bg-night^="assets/bg-host-night"] .page-bg { filter: none; }
+
+.page-bg.is-loaded { opacity: 1; }
+
+.page-bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(245, 246, 250, .74) 0%, rgba(245, 246, 250, .86) 100%);
+}
+
+body.dark-theme .page-bg-overlay {
+  background: linear-gradient(180deg, rgba(15, 17, 23, .72) 0%, rgba(15, 17, 23, .85) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-bg { transition: none; }
 }
 
 /* ---------- Sidebar ---------- */
@@ -112,7 +166,7 @@ body {
   border: none;
   background: linear-gradient(135deg, var(--blue), var(--purple));
   color: #fff;
-  box-shadow: 0 3px 10px rgba(191, 83, 48, .4);
+  box-shadow: 0 3px 10px rgba(79, 129, 175, .4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -123,7 +177,7 @@ body {
 
 .sidebar-collapse-toggle:hover {
   transform: scale(1.18) rotate(-10deg);
-  box-shadow: 0 5px 16px rgba(191, 83, 48, .55);
+  box-shadow: 0 5px 16px rgba(79, 129, 175, .55);
 }
 
 .sidebar-collapse-toggle:active { transform: scale(.8); }
@@ -256,7 +310,7 @@ body {
 }
 
 body.dark-theme .nav-item.active {
-  background: rgba(191, 83, 48, 0.18);
+  background: rgba(79, 129, 175, 0.18);
   color: #F2C2AC;
 }
 
@@ -280,6 +334,9 @@ body.dark-theme .nav-item.active {
   flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .topbar-title h1 {
@@ -359,15 +416,17 @@ body.dark-theme .theme-toggle .dot { transform: translateX(2px); }
   transition: transform .25s ease, box-shadow .25s ease;
 }
 
+.clickable-card { cursor: pointer; }
+
 .card:focus-within,
 .card.touch-active {
   transform: translateY(-6px);
-  box-shadow: 0 22px 45px -12px rgba(191, 83, 48, .35), 0 10px 20px rgba(17, 24, 39, .08);
+  box-shadow: 0 22px 45px -12px rgba(79, 129, 175, .35), 0 10px 20px rgba(17, 24, 39, .08);
 }
 
 body.dark-theme .card:focus-within,
 body.dark-theme .card.touch-active {
-  box-shadow: 0 22px 45px -10px rgba(191, 83, 48, .45), 0 10px 24px rgba(0, 0, 0, .5);
+  box-shadow: 0 22px 45px -10px rgba(79, 129, 175, .45), 0 10px 24px rgba(0, 0, 0, .5);
 }
 
 /* :hover scoped to real pointer devices — touch already gets the same
@@ -376,11 +435,11 @@ body.dark-theme .card.touch-active {
 @media (hover: hover) and (pointer: fine) {
   .card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 22px 45px -12px rgba(191, 83, 48, .35), 0 10px 20px rgba(17, 24, 39, .08);
+    box-shadow: 0 22px 45px -12px rgba(79, 129, 175, .35), 0 10px 20px rgba(17, 24, 39, .08);
   }
 
   body.dark-theme .card:hover {
-    box-shadow: 0 22px 45px -10px rgba(191, 83, 48, .45), 0 10px 24px rgba(0, 0, 0, .5);
+    box-shadow: 0 22px 45px -10px rgba(79, 129, 175, .45), 0 10px 24px rgba(0, 0, 0, .5);
   }
 }
 
@@ -397,14 +456,14 @@ body.dark-theme .card.touch-active {
 }
 
 .summary-label {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: 8px;
 }
 
 .summary-value {
-  font-size: var(--fs-3xl);
+  font-size: var(--fs-2xl);
   font-weight: 800;
   margin-bottom: 8px;
   overflow-wrap: break-word;
@@ -439,25 +498,25 @@ body.dark-theme .card.touch-active {
 }
 
 .stat-label {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   font-weight: 600;
 }
 
 .stat-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
   background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   flex-shrink: 0;
 }
 
 .stat-value {
-  font-size: var(--fs-2xl);
+  font-size: var(--fs-xl);
   font-weight: 800;
   margin-bottom: 6px;
   overflow-wrap: break-word;
@@ -470,13 +529,13 @@ body.dark-theme .card.touch-active {
   justify-content: center;
   align-items: center;
   margin: 6px auto 14px;
-  width: 148px;
-  height: 148px;
+  width: 130px;
+  height: 130px;
 }
 
 .donut-wrap canvas {
-  width: 148px;
-  height: 148px;
+  width: 130px;
+  height: 130px;
   display: block;
 }
 
@@ -487,12 +546,12 @@ body.dark-theme .card.touch-active {
   transform: translate(-50%, -50%);
   text-align: center;
   pointer-events: none;
-  max-width: 84px;
+  max-width: 76px;
 }
 
 .donut-total {
   display: block;
-  font-size: var(--fs-base);
+  font-size: var(--fs-sm);
   font-weight: 800;
   line-height: 1.15;
   white-space: nowrap;
@@ -586,10 +645,12 @@ body.dark-theme .card.touch-active {
   top: 0;
   left: 0;
   transform: translate(-50%, -125%);
-  background: var(--card);
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
   color: var(--text);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: var(--fs-xs);
@@ -711,6 +772,8 @@ body.dark-theme .card.touch-active {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 140px;
+  overflow-y: auto;
 }
 
 .host-mini-item {
@@ -823,7 +886,7 @@ tbody tr {
 }
 
 .status.delivered { background: rgba(34,197,94,.12); color: var(--green); }
-.status.processed { background: rgba(191, 83, 48,.12); color: var(--blue); }
+.status.processed { background: rgba(79, 129, 175,.12); color: var(--blue); }
 .status.cancelled { background: rgba(239,68,68,.12); color: var(--red); }
 .status.upcoming { background: rgba(18, 137, 126,.16); color: var(--purple); }
 
@@ -836,7 +899,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   border-radius: 20px;
   font-size: var(--fs-xs);
   font-weight: 700;
-  background: rgba(191, 83, 48,.12);
+  background: rgba(79, 129, 175,.12);
   color: var(--blue);
   white-space: nowrap;
 }
@@ -941,7 +1004,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 }
 
 .total-chip.c-total .total-chip-icon,
-.total-chip.c-paid .total-chip-icon { background: rgba(191, 83, 48, .14); color: var(--blue); }
+.total-chip.c-paid .total-chip-icon { background: rgba(79, 129, 175, .14); color: var(--blue); }
 
 .total-chip.c-host .total-chip-icon,
 .total-chip.c-hostpaid .total-chip-icon { background: rgba(18, 137, 126, .16); color: var(--purple); }
@@ -1122,10 +1185,12 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: var(--card);
-  border: 1px solid var(--border);
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--glass-shadow);
   padding: 8px;
   z-index: 20;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1179,7 +1244,9 @@ td.amount-owed { color: var(--red); font-weight: 700; }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 23, .5);
+  background: rgba(15, 17, 23, .38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 50;
   align-items: center;
   justify-content: center;
@@ -1189,9 +1256,12 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 .modal-overlay.show { display: flex; }
 
 .modal-card {
-  background: var(--card);
+  background: var(--glass);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow);
+  box-shadow: var(--glass-shadow);
   padding: 24px;
   width: 100%;
   max-width: 480px;
@@ -1264,8 +1334,8 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 
 .form-row input,
 .form-row select {
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid rgba(127, 127, 140, .2);
+  background: rgba(127, 127, 140, .09);
   color: var(--text);
   border-radius: 10px;
   padding: 9px 12px;
@@ -1273,6 +1343,7 @@ td.amount-owed { color: var(--red); font-weight: 700; }
      input under 16px, which is jarring in these forms on a phone. */
   font-size: var(--fs-md);
   font-family: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
 /* Up/Down now move between fields (see bookings.js) instead of nudging
@@ -1289,8 +1360,10 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 
 .form-row input:focus,
 .form-row select:focus {
-  outline: 2px solid var(--blue);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--blue);
+  background: rgba(127, 127, 140, .14);
+  box-shadow: 0 0 0 4px rgba(79, 129, 175, .18);
 }
 
 .form-actions {
@@ -1363,14 +1436,14 @@ td.amount-owed { color: var(--red); font-weight: 700; }
 .host-card:focus,
 .host-card.show {
   transform: translateY(-6px);
-  box-shadow: 0 22px 45px -12px rgba(191, 83, 48, .35), 0 10px 20px rgba(17, 24, 39, .08);
+  box-shadow: 0 22px 45px -12px rgba(79, 129, 175, .35), 0 10px 20px rgba(17, 24, 39, .08);
   outline: none;
   z-index: 10;
 }
 
 body.dark-theme .host-card:focus,
 body.dark-theme .host-card.show {
-  box-shadow: 0 22px 45px -10px rgba(191, 83, 48, .45), 0 10px 24px rgba(0, 0, 0, .5);
+  box-shadow: 0 22px 45px -10px rgba(79, 129, 175, .45), 0 10px 24px rgba(0, 0, 0, .5);
 }
 
 /* :hover is scoped to real pointer devices only — touch would fire a
@@ -1381,12 +1454,12 @@ body.dark-theme .host-card.show {
 @media (hover: hover) and (pointer: fine) {
   .host-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 22px 45px -12px rgba(191, 83, 48, .35), 0 10px 20px rgba(17, 24, 39, .08);
+    box-shadow: 0 22px 45px -12px rgba(79, 129, 175, .35), 0 10px 20px rgba(17, 24, 39, .08);
     z-index: 10;
   }
 
   body.dark-theme .host-card:hover {
-    box-shadow: 0 22px 45px -10px rgba(191, 83, 48, .45), 0 10px 24px rgba(0, 0, 0, .5);
+    box-shadow: 0 22px 45px -10px rgba(79, 129, 175, .45), 0 10px 24px rgba(0, 0, 0, .5);
   }
 }
 
@@ -1580,7 +1653,7 @@ body.dark-theme .host-card.show {
 .hcal-cell.empty { visibility: hidden; }
 
 .hcal-cell.has-guest {
-  background: rgba(191, 83, 48,.12);
+  background: rgba(79, 129, 175,.12);
   color: var(--blue);
   font-weight: 700;
   cursor: default;

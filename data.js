@@ -296,6 +296,146 @@ async function upsertBooking(b, month) {
   return rowToBooking(data);
 }
 
+// ---------- Excel bookings import ----------
+// Shared by the Bookings page (the only place this is wired up to a
+// button) — lives here rather than in bookings.js because it only touches
+// data-layer functions already in this file. Reads the same column layout
+// the Excel export produces (ID, Date booked, Guest, Apartment, Check-in,
+// Check-out, Total, Host share, Commission, Amount paid, Remaining, Host
+// paid, Status) so a file exported from here — edited, or handed off and
+// filled in by someone else — round-trips back in cleanly. One sheet per
+// month, same as the export; a "Summary" sheet (or any sheet without a
+// Guest/Check-in column) is skipped automatically rather than misread as
+// bookings.
+const EXCEL_HEADER_MAP = {
+  'id': 'id', 'date booked': 'dateBooked', 'guest': 'guest', 'apartment': 'apartment',
+  'check-in': 'checkin', 'check-out': 'checkout', 'total': 'total', 'host share': 'hostShare',
+  'commission': 'commission', 'amount paid': 'amountPaid', 'remaining': 'remaining',
+  'host paid': 'hostPaid', 'status': 'status',
+};
+
+function excelDateToIso(val) {
+  if (val == null || val === '') return '';
+  if (val instanceof Date) {
+    const y = val.getFullYear(), m = String(val.getMonth() + 1).padStart(2, '0'), d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(val).trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : s;
+}
+
+// Rows already saved under the same id+month get updated in place (via
+// _dbId) instead of duplicated — re-importing the same file twice is safe.
+function findExistingBookingForImport(id, month) {
+  return (loadBookings()[month] || []).find(b => b.id === id);
+}
+
+function nextIdForImport(month, alreadyUsedThisImport) {
+  const existing = (loadBookings()[month] || []).map(b => b.id);
+  const used = existing.concat(alreadyUsedThisImport);
+  const maxNum = used.reduce((m, id) => {
+    const n = parseInt(String(id).replace(/\D/g, ''), 10);
+    return Number.isNaN(n) ? m : Math.max(m, n);
+  }, 0);
+  return 'B' + String(maxNum + 1).padStart(3, '0');
+}
+
+function parseBookingSheet(sheet) {
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+  if (!rows.length) return [];
+
+  const header = rows[0].map(h => String(h || '').trim().toLowerCase());
+  const colFor = {};
+  header.forEach((h, i) => { if (EXCEL_HEADER_MAP[h]) colFor[EXCEL_HEADER_MAP[h]] = i; });
+  if (colFor.guest == null || colFor.checkin == null) return []; // not a bookings sheet
+
+  const get = (row, key) => (colFor[key] != null ? row[colFor[key]] : '');
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const idVal = String(get(row, 'id') || '').trim();
+    const guest = String(get(row, 'guest') || '').trim();
+    if (!guest || idVal.toUpperCase() === 'TOTAL') continue; // skip blank rows and the export's own totals row
+
+    const statusLabel = String(get(row, 'status') || '').toLowerCase();
+    out.push({
+      id: idVal,
+      dateBooked: excelDateToIso(get(row, 'dateBooked')),
+      guest,
+      apartment: String(get(row, 'apartment') || '').trim(),
+      checkin: excelDateToIso(get(row, 'checkin')),
+      checkout: excelDateToIso(get(row, 'checkout')),
+      total: Number(get(row, 'total')) || 0,
+      hostShare: Number(get(row, 'hostShare')) || 0,
+      commission: Number(get(row, 'commission')) || 0,
+      amountPaid: Number(get(row, 'amountPaid')) || 0,
+      remaining: Number(get(row, 'remaining')) || 0,
+      hostPaid: String(get(row, 'hostPaid') || '').trim(),
+      status: statusLabel.includes("didn't stay") || statusLabel.includes('didnt stay') ? "DIDN'T STAY" : '',
+    });
+  }
+  return out;
+}
+
+// Reads and parses `file` only — writes nothing yet. Returns
+// `{ rows, skipped }`: `rows` is `[{ row, month }, ...]` ready to hand to
+// saveImportedBookings, `skipped` counts rows that had no Check-in date
+// and so can't be filed anywhere. Split from saving so the caller can
+// show the user what's about to happen (how many bookings, which months)
+// and let them back out before anything is actually written.
+async function parseExcelBookingsFile(file) {
+  if (typeof XLSX === 'undefined') throw new Error('Excel import isn’t available right now — the xlsx library failed to load.');
+
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+
+  const parsedRows = [];
+  wb.SheetNames.forEach(name => {
+    if (name.trim().toLowerCase() === 'summary') return;
+    parseBookingSheet(wb.Sheets[name]).forEach(r => parsedRows.push(r));
+  });
+
+  const rows = parsedRows
+    .map(r => ({ row: r, month: bookingMonthKey(r) }))
+    .filter(x => x.month); // a row with no check-in date can't be filed anywhere
+  const skipped = parsedRows.length - rows.length;
+
+  return { rows, skipped };
+}
+
+// Saves rows already parsed by parseExcelBookingsFile. `onProgress
+// (doneCount, totalCount)` fires after each row. Returns
+// `{ done, failed, months }` — `months` is the sorted list of distinct
+// "YYYY-MM" keys any booking was filed under, so the caller can jump the
+// UI there.
+async function saveImportedBookings(rows, onProgress) {
+  const usedIdsByMonth = {};
+  const monthsTouched = new Set();
+  let done = 0, failed = 0;
+  for (const { row, month } of rows) {
+    if (!row.id) row.id = nextIdForImport(month, usedIdsByMonth[month] || []);
+    (usedIdsByMonth[month] = usedIdsByMonth[month] || []).push(row.id);
+
+    const existing = findExistingBookingForImport(row.id, month);
+    if (existing) row._dbId = existing._dbId;
+
+    try {
+      const saved = await upsertBooking(row, month);
+      const bucket = loadBookings();
+      bucket[month] = (bucket[month] || []).filter(b => b.id !== row.id);
+      bucket[month].push(saved);
+      monthsTouched.add(month);
+      done++;
+    } catch (err) {
+      console.error('Excel row import failed:', row, err);
+      failed++;
+    }
+    if (onProgress) onProgress(done + failed, rows.length);
+  }
+
+  return { done, failed, months: Array.from(monthsTouched).sort() };
+}
+
 // Deleting a booking moves it to the Trash (sets deleted_at) instead of
 // removing the row outright, so it can be restored within the retention
 // window. Also updates the in-memory trash cache so the Trash modal

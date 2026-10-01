@@ -7,9 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
-<body>
+<body data-bg-day="assets/bg-settings-day.jpg" data-bg-night="assets/bg-settings-night.jpg">
+
+<div class="page-bg" id="pageBg" aria-hidden="true"></div>
+<div class="page-bg-overlay" aria-hidden="true"></div>
 
 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
   <span></span><span></span><span></span>
@@ -129,15 +132,16 @@
         <p class="settings-card-desc">
           Everything on this dashboard — bookings and hosts — is stored in your account,
           synced across every device you sign into. Export a backup as extra insurance, or
-          export to Excel to share your bookings with someone else.
+          export to Excel to share your bookings with someone else. (Importing bookings from
+          an Excel file is on the Bookings page now.)
         </p>
         <div class="form-actions-inline">
           <select class="export-month-select" id="exportMonthSelect" aria-label="Month to export"></select>
           <button type="button" class="btn-secondary" id="exportExcelBtn">Export to Excel (.xlsx)</button>
           <button type="button" class="btn-secondary" id="exportDataBtn">Export data (.json)</button>
           <label class="btn-secondary file-btn" for="importDataInput">
-            Import data (.json backup or .xlsx bookings)
-            <input type="file" id="importDataInput" accept=".json,.xlsx,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+            Import backup (.json)
+            <input type="file" id="importDataInput" accept=".json,application/json" hidden>
           </label>
           <button type="button" class="btn-secondary btn-danger" id="resetDataBtn">Reset to sample data</button>
         </div>
@@ -153,9 +157,9 @@
 <script src="xlsx.mini.min.js"></script>
 <script src="supabase.min.js"></script>
 <script src="supabaseClient.js?v=2"></script>
-<script src="data.js?v=3"></script>
+<script src="data.js?v=4"></script>
 <script src="auth.js?v=2"></script>
-<script src="script.js?v=4"></script>
-<script src="settings.js?v=2"></script>
+<script src="script.js?v=6"></script>
+<script src="settings.js?v=3"></script>
 </body>
 </html>

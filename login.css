@@ -1,8 +1,8 @@
 :root {
-  --blue: #BF5330;
+  --blue: #4F81AF;
   --purple: #12897E;
   --bg-deep: #05070c;
-  --panel: rgba(15, 20, 32, .72);
+  --panel: rgba(15, 20, 32, .4);
   --panel-border: rgba(148, 163, 184, .16);
   --text: #F3F5F9;
   --text-muted: #93A0B4;
@@ -24,7 +24,7 @@ html, body { height: 100%; }
 body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: radial-gradient(ellipse at 30% 20%, #0d1626 0%, var(--bg-deep) 60%);
+  background: var(--bg-deep);
   color: var(--text);
   overflow-x: hidden;
 }
@@ -39,7 +39,62 @@ body {
   overflow: hidden;
 }
 
-/* ---------- Ambient background ---------- */
+/* ---------- Background photo ---------- */
+/* Shows the low-res blurred placeholder (inlined so it paints instantly,
+   no request needed) until login.js preloads the real photo and adds
+   .is-loaded, which cross-fades to it. The slow zoom runs continuously —
+   idle and while waiting on the sign-in request alike, since there's no
+   separate "waiting" state worth breaking the motion for. */
+.bg-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAJKADAAQAAAABAAAAFAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/+ICpElDQ19QUk9GSUxFAAEBAAAClGFwcGwCEAAAbW50clJHQiBYWVogB9UABAABAAEAAQABYWNzcEFQUEwAAAAAQVBQTAAAAAAAAAAAAAAAAAAAAAAAAPbWAAEAAAAA0y1hcHBsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMZGVzYwAAARQAAABfY3BydAAAAXQAAAAid3RwdAAAAZgAAAAUclhZWgAAAawAAAAUZ1hZWgAAAcAAAAAUYlhZWgAAAdQAAAAUclRSQwAAAegAAAAOdmNndAAAAfgAAAAwbmRpbgAAAigAAAA+Y2hhZAAAAmgAAAAsYlRSQwAAAegAAAAOZ1RSQwAAAegAAAAOZGVzYwAAAAAAAAAFSERUVgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdGV4dAAAAABDb3B5cmlnaHQgMjAwNyBBcHBsZSBJbmMuAAAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9jdXJ2AAAAAAAAAAEB9gAAdmNndAAAAAAAAAABAAEAAAAAAAAAAQAAAAEAAAAAAAAAAQAAAAEAAAAAAAAAAQAAbmRpbgAAAAAAAAA2AACj1wAAVHsAAEzNAACZmgAAJmYAAA9cAABQDQAAVDkAAfYEAAH2BAAB9gQAAAAAAAAAAHNmMzIAAAAAAAEMQgAABd7///MmAAAHkwAA/ZD///ui///9owAAA9wAAMBu/8AAEQgAFAAkAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMACQkJCQkJEAkJEBYQEBAWHhYWFhYeJh4eHh4eJi4mJiYmJiYuLi4uLi4uLjc3Nzc3N0BAQEBASEhISEhISEhISP/bAEMBCwwMEhESHxERH0szKjNLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS//dAAQAA//aAAwDAQACEQMRAD8AxptJghge4idR5YU7SMkg5BIOOgx3plukd5CGCpluh9SPwqtPqpa2kLSbgVCnjIAByOnuadpOoI0QhtVOYjuBPAJPGO9ErXKhzWNlrI7Avlrz16f4U9rZWhzhI1X2GavedMkYeZt5jHAXr6/pWDPdQXDCfIBXOR3NYzgmro2jNrRlF4k3fIisPXimeT/0zX/x2lWdSMpsAz3xmned7x/pUcj7F8y7n//Q5JY0S3KADBI4qe2G0nbxUf8Ayx/EVLB1NYVtkddHdmoJXB4PSsTUEQNvA5Y81rd6zNR6L9TWUH7xdRe6ZAiRuTS+QnvT06U6tznP/9k=");
+  background-size: cover;
+  background-position: center;
+  animation: kenburns 42s ease-in-out infinite alternate;
+  transition: opacity .6s ease;
+}
+
+.bg-photo.is-loaded {
+  background-image: url("assets/login-house.jpg");
+}
+
+@keyframes kenburns {
+  from { transform: scale(1); }
+  to { transform: scale(1.09); }
+}
+
+/* Fades in over the photo once the video can actually play — the photo
+   stays underneath the whole time as the fallback (reduced-motion, a slow
+   connection, or the video simply failing to load). */
+.bg-video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1s ease;
+  animation: kenburns 60s ease-in-out infinite alternate;
+}
+
+.bg-video.is-playing { opacity: 1; }
+
+/* Dark gradient over the photo so the glass card and text stay legible —
+   heavier at the bottom where the card usually sits. */
+.bg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(5,7,12,.32) 0%, rgba(5,7,12,.48) 55%, rgba(5,7,12,.66) 100%);
+}
+
+/* ---------- Ambient (reset-password.html only — login.html uses the
+   photo background above instead) ---------- */
 .ambient {
   position: absolute;
   inset: 0;
@@ -63,10 +118,6 @@ body {
   50% { transform: translate(30px, -40px) scale(1.08); }
 }
 
-/* ---------- Waves ---------- */
-/* Slowly drifting wavy lines while the page waits for a sign-in. Each
-   SVG is drawn twice as wide as its box with an identically-repeating
-   path, so translating it by exactly half its width loops seamlessly. */
 .waves {
   position: absolute;
   inset: 0;
@@ -172,7 +223,7 @@ body {
 
 .input-wrap:focus-within {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(191, 83, 48, .18);
+  box-shadow: 0 0 0 3px rgba(79, 129, 175, .18);
 }
 
 .input-wrap input {
@@ -225,12 +276,12 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: transform .15s ease, box-shadow .2s ease, opacity .2s ease;
-  box-shadow: 0 10px 24px rgba(191, 83, 48, .3);
+  box-shadow: 0 10px 24px rgba(79, 129, 175, .3);
 }
 
 .login-submit svg { width: 16px; height: 16px; transition: transform .2s ease; }
 .login-submit:hover svg { transform: translateX(3px); }
-.login-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(191, 83, 48, .4); }
+.login-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(79, 129, 175, .4); }
 .login-submit:active { transform: translateY(0) scale(.98); }
 .login-submit:disabled { opacity: .6; cursor: default; transform: none; }
 
@@ -274,6 +325,8 @@ body {
 
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
+  .bg-photo,
+  .bg-video,
   .glow-blob,
   .wave-1,
   .wave-2,

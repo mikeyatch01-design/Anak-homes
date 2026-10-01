@@ -7,9 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
-<body>
+<body data-bg-day="assets/bg-host-day.jpg" data-bg-night="assets/bg-host-night.jpg?v=2">
+
+<div class="page-bg" id="pageBg" aria-hidden="true"></div>
+<div class="page-bg-overlay" aria-hidden="true"></div>
 
 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
   <span></span><span></span><span></span>
@@ -148,9 +151,9 @@
 
 <script src="supabase.min.js"></script>
 <script src="supabaseClient.js?v=2"></script>
-<script src="data.js?v=3"></script>
+<script src="data.js?v=4"></script>
 <script src="auth.js?v=2"></script>
-<script src="script.js?v=4"></script>
+<script src="script.js?v=6"></script>
 <script src="host.js?v=2"></script>
 </body>
 </html>

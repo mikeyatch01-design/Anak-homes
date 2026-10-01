@@ -234,22 +234,28 @@ function renderHostBreakdown() {
   const unpaidList = document.getElementById('unpaidHostList');
   if (!paidList && !unpaidList) return;
 
-  const breakdown = hostPaymentBreakdown(CURRENT_MONTH);
-  const row = (h, amount) => `
+  const row = (label, amount) => `
     <li class="host-mini-item">
-      <span class="host-mini-name">${h.icon} ${escapeHtml(h.name)}</span>
+      <span class="host-mini-name">${escapeHtml(label)}</span>
       <span class="host-mini-amount">${formatTZS(amount)}</span>
     </li>
   `;
 
+  // Paid to Host shows every recorded month (not just the current one) —
+  // most recent first — so it reads as a running payout history rather
+  // than a single snapshot. Unpaid to Host stays scoped to the current
+  // month, split by host, since "unpaid" is only meaningful as a
+  // right-now balance, not a historical figure.
   if (paidList) {
-    paidList.innerHTML = breakdown.paid.length
-      ? breakdown.paid.map(h => row(h, h.paid)).join('')
+    const months = dataMonthKeys.slice().reverse();
+    paidList.innerHTML = months.length
+      ? months.map(m => row(monthLabel(m), monthHostPaid(m))).join('')
       : `<li class="host-mini-empty">No payouts recorded yet.</li>`;
   }
   if (unpaidList) {
+    const breakdown = hostPaymentBreakdown(CURRENT_MONTH);
     unpaidList.innerHTML = breakdown.unpaid.length
-      ? breakdown.unpaid.map(h => row(h, h.unpaid)).join('')
+      ? breakdown.unpaid.map(h => row(`${h.icon} ${h.name}`, h.unpaid)).join('')
       : `<li class="host-mini-empty">Every host is fully paid.</li>`;
   }
 }
@@ -332,14 +338,14 @@ function redrawAllCharts() {
   // Same underlying split feeds both donuts — they're two views of the
   // same booking pool (full paid vs half paid), so they stay in sync.
   const paymentSplitSegments = [
-    { value: split.fullCount, color: '#BF5330' }, // Full paid
+    { value: split.fullCount, color: '#4F81AF' }, // Full paid
     { value: split.halfCount, color: '#F5B942' }, // Half paid
   ];
   drawDonut('donutBookings', paymentSplitSegments);
   drawDonut('donutUnpaid', paymentSplitSegments);
 
   const bookings = bookingsDataSets[bookingsMode];
-  drawBarChart('barChart', bookings.labels, bookings.data, '#BF5330', 10);
+  drawBarChart('barChart', bookings.labels, bookings.data, '#4F81AF', 10);
 
   renderIncomeChart();
 }
@@ -426,6 +432,18 @@ if (lineCanvas) {
 // ---------- React to theme/resize changes dispatched by script.js ----------
 document.addEventListener('themechange', redrawAllCharts);
 document.addEventListener('appresize', () => { hideIncomeTooltip(); redrawAllCharts(); });
+
+// ---------- Booking Activity card links to the Bookings page ----------
+const bookingActivityCard = document.getElementById('bookingActivityCard');
+if (bookingActivityCard) {
+  bookingActivityCard.addEventListener('click', () => { location.href = 'bookings.html'; });
+  bookingActivityCard.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      location.href = 'bookings.html';
+    }
+  });
+}
 
 // ---------- Init ----------
 renderSummary();

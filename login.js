@@ -12,6 +12,38 @@ function getNextPage() {
 
 const nextPage = getNextPage();
 
+// The background starts as a tiny inlined blurred placeholder (instant,
+// no request) and swaps to the real photo once it's actually downloaded —
+// avoids a blank/white flash while a ~580KB image is still loading.
+(function loadBgPhoto() {
+  const bgPhoto = document.getElementById('bgPhoto');
+  if (!bgPhoto) return;
+  const img = new Image();
+  img.onload = () => bgPhoto.classList.add('is-loaded');
+  img.src = 'assets/login-house.jpg';
+})();
+
+// The photo above is the permanent fallback; this layers a looping video
+// on top once it's actually ready to play. Skipped entirely — never even
+// requested — for prefers-reduced-motion, or when the browser reports a
+// data-saver / 2G-class connection, since the video is a ~6MB request the
+// photo already covers the same ground for.
+(function loadBgVideo() {
+  const bgVideo = document.getElementById('bgVideo');
+  if (!bgVideo) return;
+
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) return;
+
+  const conn = navigator.connection || navigator.webkitConnection || navigator.mozConnection;
+  if (conn && (conn.saveData || /^(slow-2g|2g)$/.test(conn.effectiveType || ''))) return;
+
+  bgVideo.addEventListener('playing', () => bgVideo.classList.add('is-playing'), { once: true });
+  bgVideo.src = 'assets/login-house.mp4';
+  bgVideo.preload = 'auto';
+  bgVideo.play().catch(() => {}); // autoplay can be blocked by the browser — the photo stays visible either way
+})();
+
 (async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {

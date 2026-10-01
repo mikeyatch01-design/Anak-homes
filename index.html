@@ -7,9 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
-<body>
+<body data-bg-day="assets/bg-dashboard-day.jpg" data-bg-night="assets/bg-dashboard-night.jpg">
+
+<div class="page-bg" id="pageBg" aria-hidden="true"></div>
+<div class="page-bg-overlay" aria-hidden="true"></div>
 
 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
   <span></span><span></span><span></span>
@@ -134,7 +137,7 @@
           </div>
         </div>
         <ul class="legend">
-          <li><span class="dot" style="background:#BF5330"></span>Full paid <b id="paidLegendFullPct">—</b></li>
+          <li><span class="dot" style="background:#4F81AF"></span>Full paid <b id="paidLegendFullPct">—</b></li>
           <li><span class="dot" style="background:#F5B942"></span>Half paid <b id="paidLegendHalfPct">—</b></li>
         </ul>
       </div>
@@ -151,7 +154,7 @@
           </div>
         </div>
         <ul class="legend">
-          <li><span class="dot" style="background:#BF5330"></span>Full paid <b id="unpaidLegendFullPct">—</b></li>
+          <li><span class="dot" style="background:#4F81AF"></span>Full paid <b id="unpaidLegendFullPct">—</b></li>
           <li><span class="dot" style="background:#F5B942"></span>Half paid <b id="unpaidLegendHalfPct">—</b></li>
         </ul>
         <div class="donut-footnote" id="unpaidFootnote">—</div>
@@ -161,7 +164,7 @@
 
     <!-- Charts row -->
     <section class="charts-grid">
-      <div class="card table-card area-sales">
+      <div class="card table-card area-sales clickable-card" id="bookingActivityCard" role="link" tabindex="0">
         <div class="card-header">
           <h2>Booking Activity</h2>
           <span class="refresh">⟳</span>
@@ -247,10 +250,10 @@
 
 <script src="supabase.min.js"></script>
 <script src="supabaseClient.js?v=2"></script>
-<script src="data.js?v=3"></script>
+<script src="data.js?v=4"></script>
 <script src="auth.js?v=2"></script>
 <script src="charts.js?v=2"></script>
-<script src="script.js?v=4"></script>
-<script src="finances.js?v=3"></script>
+<script src="script.js?v=6"></script>
+<script src="finances.js?v=4"></script>
 </body>
 </html>
