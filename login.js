@@ -25,15 +25,19 @@ const nextPage = getNextPage();
 
 // The photo above is the permanent fallback; this layers a looping video
 // on top once it's actually ready to play. Skipped entirely — never even
-// requested — for prefers-reduced-motion, or when the browser reports a
-// data-saver / 2G-class connection, since the video is a ~6MB request the
-// photo already covers the same ground for.
+// requested — for prefers-reduced-motion, a data-saver / 2G-class
+// connection, or a phone-width screen (the video played choppy on actual
+// phone hardware — tablets and desktops keep it, only narrow/phone
+// viewports fall back to the static photo).
 (function loadBgVideo() {
   const bgVideo = document.getElementById('bgVideo');
   if (!bgVideo) return;
 
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reducedMotion) return;
+
+  const isPhoneWidth = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
+  if (isPhoneWidth) return;
 
   const conn = navigator.connection || navigator.webkitConnection || navigator.mozConnection;
   if (conn && (conn.saveData || /^(slow-2g|2g)$/.test(conn.effectiveType || ''))) return;

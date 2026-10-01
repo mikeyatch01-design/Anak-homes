@@ -832,6 +832,14 @@ body.dark-theme .card.touch-active {
 .card .table-wrap {
   max-height: 420px;
   overflow-y: auto;
+  /* The base .table-wrap rule above commits touch gestures to horizontal
+     panning only (pan-x) — needed so swiping the table doesn't lose to
+     the page's own vertical scroll. But THIS element also scrolls
+     vertically within itself (overflow-y:auto above), so pan-x alone
+     blocked that: a vertical drag here had nowhere native to go, making
+     it feel like only sideways swiping worked. Allowing both lets touch
+     resolve to whichever direction the drag actually is. */
+  touch-action: pan-x pan-y;
 }
 .card .table-wrap thead th {
   position: sticky;
@@ -1845,6 +1853,13 @@ body.dark-theme .host-card.show {
 
   .main { padding: 80px 18px 40px; }
   .topbar-title h1 { font-size: var(--fs-xl); }
+  /* The sticky top bar was tied with the sidebar drawer at z-index:20 —
+     same stacking level, so DOM order (topbar comes after the sidebar in
+     the markup) made it win and sit on top of the open drawer, covering
+     the nav with its own title/toggle/avatar. Dropping it below both the
+     drawer (20) and its dimming overlay (15) on mobile only — desktop has
+     no drawer to conflict with, so it stays at 20 there. */
+  .topbar { z-index: 5; }
 }
 
 /* Phone portrait — everything above only cuts down to fewer *columns* of
