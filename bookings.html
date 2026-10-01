@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body data-bg-day="assets/bg-bookings-day.jpg" data-bg-night="assets/bg-bookings-night.jpg">
 
@@ -110,9 +110,17 @@
 
     <div class="settings-note" id="importNote"></div>
 
-    <div class="card">
+    <div class="card" id="bookingsCard">
       <div class="card-header">
         <h2 id="tableMonthLabel">Bookings</h2>
+        <button type="button" class="expand-toggle" id="expandBookingsBtn" title="Expand to full screen" aria-label="Expand to full screen">
+          <svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>
+          </svg>
+          <svg class="shrink-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden>
+            <path d="M9 3v4a2 2 0 0 1-2 2H3M15 3v4a2 2 0 0 0 2 2h4M21 15h-4a2 2 0 0 0-2 2v4M3 15h4a2 2 0 0 1 2 2v4"/>
+          </svg>
+        </button>
       </div>
 
       <div class="totals-panel" id="totalsPanel"></div>
@@ -246,6 +254,6 @@
 <script src="data.js?v=4"></script>
 <script src="auth.js?v=2"></script>
 <script src="script.js?v=6"></script>
-<script src="bookings.js?v=5"></script>
+<script src="bookings.js?v=6"></script>
 </body>
 </html>

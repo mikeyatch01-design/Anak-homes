@@ -337,6 +337,11 @@ body.dark-theme .nav-item.active {
   position: sticky;
   top: 0;
   z-index: 20;
+  /* No background fill — stays see-through, per Malik's earlier request —
+     just enough blur that scrolling content doesn't read as sharp text
+     sitting directly under the title/avatar. */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .topbar-title h1 {
@@ -688,6 +693,57 @@ body.dark-theme .card.touch-active {
   font-size: var(--fs-md);
   font-weight: 700;
   margin: 0;
+}
+
+/* ---------- Expand-to-fullscreen (Bookings table) ---------- */
+.expand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease;
+}
+
+.expand-toggle:hover { color: var(--blue); border-color: var(--blue); }
+.expand-toggle svg { width: 16px; height: 16px; }
+
+/* The card itself becomes the full-screen surface — fixed, filling the
+   viewport above everything (sidebar/topbar included), so nothing extra
+   has to be hidden or restructured to "go full screen". Position fixed
+   instead of toggling the card's own layout keeps its scroll position
+   and contents untouched when shrinking back. */
+.card.is-maximized {
+  position: fixed;
+  inset: 16px;
+  /* Below .modal-overlay (50) on purpose — the Add/Edit Booking modal
+     must still be able to open on top of the maximized table, not get
+     trapped behind it. */
+  z-index: 45;
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, .35);
+}
+
+.card.is-maximized .table-wrap {
+  flex: 1;
+  max-height: none;
+}
+
+body.has-maximized-card { overflow: hidden; }
+
+@media (max-width: 480px) {
+  .card.is-maximized { inset: 8px; }
 }
 
 .toggle-group {

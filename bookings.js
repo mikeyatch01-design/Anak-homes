@@ -359,6 +359,31 @@
 
   if (addBookingBtn) addBookingBtn.addEventListener('click', () => openModal(null));
 
+  // ---------- Expand the bookings table to full screen ----------
+  const bookingsCard = document.getElementById('bookingsCard');
+  const expandBookingsBtn = document.getElementById('expandBookingsBtn');
+  if (bookingsCard && expandBookingsBtn) {
+    const expandIcon = expandBookingsBtn.querySelector('.expand-icon');
+    const shrinkIcon = expandBookingsBtn.querySelector('.shrink-icon');
+
+    function setMaximized(on) {
+      bookingsCard.classList.toggle('is-maximized', on);
+      document.body.classList.toggle('has-maximized-card', on);
+      expandIcon.hidden = on;
+      shrinkIcon.hidden = !on;
+      const label = on ? 'Shrink back down' : 'Expand to full screen';
+      expandBookingsBtn.title = label;
+      expandBookingsBtn.setAttribute('aria-label', label);
+    }
+
+    expandBookingsBtn.addEventListener('click', () => {
+      setMaximized(!bookingsCard.classList.contains('is-maximized'));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && bookingsCard.classList.contains('is-maximized')) setMaximized(false);
+    });
+  }
+
   // ---------- Import from Excel ----------
   // Parsing/saving lives in data.js (shared data-layer code); this just
   // wires it to the button and shows where the imported rows landed.
