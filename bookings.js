@@ -100,6 +100,18 @@
     renderTotalsPanel(rows);
   }
 
+  // Small line icons for the totals chips (drawn, not emoji).
+  const svg = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const ICONS = {
+    receipt: svg('<path d="M6 3.5h12v17l-2.5-1.6-2 1.6-1.5-1.2-1.5 1.2-2-1.6L6 20.5z"/><path d="M9 8h6M9 11.5h6"/>'),
+    home: svg('<path d="M3.5 11.5 12 4.5l8.5 7"/><path d="M6 10v9.5h12V10"/>'),
+    briefcase: svg('<rect x="3.5" y="7" width="17" height="12.5" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3.5 12.5h17"/>'),
+    check: svg('<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.4 2.4 4.6-4.9"/>'),
+    alert: svg('<path d="M12 4 21 19.5H3z"/><path d="M12 10v4.2M12 16.8v.2"/>'),
+    clock: svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+    handshake: svg('<path d="M3 11l4-4 4 2 3-2 7 4"/><path d="M7 15l3 3 2-1 2 2 4-4"/><path d="M3 11l4 4M21 11l-3 4"/>'),
+  };
+
   // Lives below the scrollable table (not inside it) so the horizontal
   // scrollbar never overlaps it, and reads as a proper summary rather
   // than a cramped extra row squeezed into the same 13-column table.
@@ -128,77 +140,35 @@
         <span class="totals-panel-sub">${rows.length} booking${rows.length === 1 ? '' : 's'}${owedCount ? ` · ${owedCount} not fully paid` : ''}</span>
       </div>
       <div class="totals-grid">
-        ${chip('c-total', '🧾', 'Total price', formatTZS(sum('total')))}
-        ${chip('c-host', '🏠', 'Host share', formatTZS(sum('hostShare')))}
-        ${chip('c-commission', '💼', 'Commission', formatTZS(sum('commission')))}
-        ${chip('c-paid', '✅', 'Amount paid', formatTZS(sum('amountPaid')))}
-        ${chip('c-remaining', remainingTotal > 0 ? '⚠️' : '⏳', 'Remaining', formatTZS(remainingTotal), remainingTotal > 0)}
-        ${chip('c-hostpaid', '🤝', 'Host paid', formatTZS(hostPaidTotal))}
+        ${chip('c-total', ICONS.receipt, 'Total price', formatTZS(sum('total')))}
+        ${chip('c-host', ICONS.home, 'Host share', formatTZS(sum('hostShare')))}
+        ${chip('c-commission', ICONS.briefcase, 'Commission', formatTZS(sum('commission')))}
+        ${chip('c-paid', ICONS.check, 'Amount paid', formatTZS(sum('amountPaid')))}
+        ${chip('c-remaining', remainingTotal > 0 ? ICONS.alert : ICONS.clock, 'Remaining', formatTZS(remainingTotal), remainingTotal > 0)}
+        ${chip('c-hostpaid', ICONS.handshake, 'Host paid', formatTZS(hostPaidTotal))}
       </div>
     `;
   }
 
-  // ---------- Month picker ----------
-  const monthPicker = document.getElementById('monthPicker');
-  const monthPickerBtn = document.getElementById('monthPickerBtn');
-  const monthPickerMenu = document.getElementById('monthPickerMenu');
-
-  function renderMonthPickerButton() {
-    const label = document.getElementById('monthPickerLabel');
-    if (label) label.textContent = monthLabel(currentMonth);
-  }
-
-  // Shows Jan–Dec of whichever year is currently in view, so a booking
-  // dropped into a different year (once that's ever needed) still has a
-  // picker that can reach it.
-  function renderMonthPickerMenu() {
-    if (!monthPickerMenu) return;
-    const year = Number(currentMonth.split('-')[0]);
-    monthPickerMenu.innerHTML = Array.from({ length: 12 }, (_, i) => {
-      const key = `${year}-${String(i + 1).padStart(2, '0')}`;
-      const hasData = monthBookings(key).length > 0;
-      const active = key === currentMonth;
-      return `<button type="button" class="month-picker-item${active ? ' active' : ''}${hasData ? ' has-data' : ''}" data-key="${key}">${monthShortLabel(key)}</button>`;
-    }).join('');
-  }
-
-  function openMonthPicker() {
-    if (!monthPicker) return;
-    renderMonthPickerMenu();
-    monthPicker.classList.add('open');
-    if (monthPickerBtn) monthPickerBtn.setAttribute('aria-expanded', 'true');
-  }
-
-  function closeMonthPicker() {
-    if (!monthPicker) return;
-    monthPicker.classList.remove('open');
-    if (monthPickerBtn) monthPickerBtn.setAttribute('aria-expanded', 'false');
-  }
+  // ---------- Month picker (grid panel, shared with the dashboard) ----------
+  let monthPickerUI = null;
+  function renderMonthPickerButton() { if (monthPickerUI) monthPickerUI.refresh(); }
+  function renderMonthPickerMenu() {}
 
   function selectMonth(key) {
     currentMonth = key;
     viewingCurrentMonth = key === todayMonthKey();
-    closeMonthPicker();
     renderBookings();
   }
 
-  if (monthPickerBtn) {
-    monthPickerBtn.addEventListener('click', () => {
-      monthPicker.classList.contains('open') ? closeMonthPicker() : openMonthPicker();
+  const monthPickerRoot = document.getElementById('monthPicker');
+  if (monthPickerRoot) {
+    monthPickerUI = createMonthPicker(monthPickerRoot, {
+      getValue: () => currentMonth,
+      hasData: (key) => monthBookings(key).length > 0,
+      onSelect: selectMonth,
     });
   }
-  if (monthPickerMenu) {
-    monthPickerMenu.addEventListener('click', (e) => {
-      const btn = e.target.closest('.month-picker-item');
-      if (btn) selectMonth(btn.dataset.key);
-    });
-  }
-  document.addEventListener('click', (e) => {
-    if (monthPicker && !monthPicker.contains(e.target)) closeMonthPicker();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMonthPicker();
-  });
 
   // ---------- Keep today's-month view and every row's status current ----------
   function msUntilNextLocalMidnight() {

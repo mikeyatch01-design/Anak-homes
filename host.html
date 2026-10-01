@@ -2,98 +2,70 @@
 <html lang="en" class="auth-checking">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
 <title>Anak Homes — Hosts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=21">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=5">
 </head>
-<body data-bg-day="assets/bg-host-day.jpg" data-bg-night="assets/bg-host-night.jpg?v=2">
+<body>
 
-<div class="page-bg" id="pageBg" aria-hidden="true"></div>
-<div class="page-bg-overlay" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
 
-<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
-  <span></span><span></span><span></span>
-</button>
-
-<div class="app">
-
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <button class="sidebar-collapse-toggle" id="sidebarCollapseToggle" aria-label="Collapse sidebar" title="Collapse sidebar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
-    </button>
-
-    <div class="logo">
-      <svg class="logo-house" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 11.5 12 4l9 7.5"/>
-        <path d="M5.5 10v9a1 1 0 0 0 1 1H10v-5.5h4V20h3.5a1 1 0 0 0 1-1v-9"/>
-      </svg>
-      <span class="logo-text">Anak Homes</span>
-    </div>
-
-    <nav class="nav">
-      <a href="index.html" class="nav-item" title="Finances">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        <span class="nav-label">Finances</span>
-      </a>
-      <a href="bookings.html" class="nav-item" title="Bookings">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 0 1 4 4L7 21l-4 1 1-4Z"/><path d="m14.5 5.5 4 4"/></svg>
-        <span class="nav-label">Bookings</span>
-      </a>
-      <a href="host.html" class="nav-item active" title="Host">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
-        <span class="nav-label">Host</span>
-      </a>
-    </nav>
-
-    <div class="sidebar-bottom">
-      <div class="nav-bottom">
-        <a href="settings.html" class="nav-item" title="Settings">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
-          <span class="nav-label">Settings</span>
-        </a>
-        <a href="#" class="nav-item" id="signOutLink" title="Sign Out">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M18.4 6.6a8 8 0 1 1-12.8 0"/></svg>
-          <span class="nav-label">Sign Out</span>
-        </a>
+<header class="topbar">
+  <div class="topbar-beam" aria-hidden="true"></div>
+  <a class="brand" href="index.html">
+    <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-5.5h4V20h3.5a1 1 0 0 0 1-1v-9"/></svg></span>
+    <span class="brand-text">Anak Homes</span>
+  </a>
+  <nav class="tnav" aria-label="Main">
+    <a href="index.html">Dashboard</a>
+    <a href="bookings.html">Bookings</a>
+    <a href="host.html" class="active" aria-current="page">Hosts</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="profile">
+      <button class="profile-btn" type="button" id="profileBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="profileMenu">
+        <span class="avatar" aria-hidden="true">A</span>
+        <span class="profile-text"><span class="profile-role">Owner</span><span class="profile-name">Anak</span></span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+      </button>
+      <div class="profile-menu" id="profileMenu" role="menu" hidden>
+        <a href="settings.html" role="menuitem">Settings</a>
+        <a href="#" role="menuitem" id="signOutLink">Sign out</a>
       </div>
     </div>
-  </aside>
+  </div>
+</header>
 
-  <div class="overlay" id="overlay"></div>
+<main class="page">
+  <header class="page-head appear">
+    <h1>Hosts</h1>
+  </header>
 
-  <!-- Main -->
-  <main class="main">
-
-    <header class="topbar">
-      <div class="topbar-title">
-        <h1>Hosts</h1>
-        <p class="welcome">Your property partners, at a glance — hover a card for totals, click for the calendar</p>
-      </div>
-      <div class="topbar-actions">
-        <div class="theme-toggle" id="themeToggle" role="button" aria-label="Toggle theme">
-          <span class="sun">☀</span>
-          <span class="dot"></span>
-          <span class="moon">☾</span>
-        </div>
-        <div class="user-chip">
-          <div class="avatar" id="userAvatar">A</div>
-          <span id="userName">Anak</span>
-        </div>
-      </div>
-    </header>
-
-    <div class="page-toolbar">
-      <button type="button" class="btn-primary" id="addHostBtn">+ Add host</button>
+  <div class="hosts-head appear" style="--d:.06s">
+    <h2 class="section-pill">Hosts <span id="hostCount">0</span></h2>
+    <button type="button" class="new-pill" id="addHostBtn"><span class="new-pill-plus" aria-hidden="true">+</span>Add host</button>
+    <div class="filter-pills" id="hostFilters" role="group" aria-label="Show hosts">
+      <button type="button" class="filter-pill active" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="filter-pill" data-filter="busy" aria-pressed="false">Busy</button>
+      <button type="button" class="filter-pill" data-filter="owed" aria-pressed="false">Owed payout</button>
+      <button type="button" class="filter-pill" data-filter="quiet" aria-pressed="false">Quiet</button>
     </div>
+  </div>
 
-    <div class="host-grid" id="hostGrid"></div>
+  <div class="host-grid appear" style="--d:.12s" id="hostGrid"></div>
 
-  </main>
-</div>
+</main>
+
+<nav class="tabbar" aria-label="Main">
+  <a href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg><span>Dashboard</span></a>
+  <a href="bookings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 14.5l2 2 4-4"/></svg><span>Bookings</span></a>
+  <a href="host.html" class="active" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg><span>Hosts</span></a>
+  <a href="settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Settings</span></a>
+</nav>
 
 <!-- Add host modal -->
 <div class="modal-overlay" id="hostModalOverlay">
@@ -153,7 +125,7 @@
 <script src="supabaseClient.js?v=2"></script>
 <script src="data.js?v=4"></script>
 <script src="auth.js?v=2"></script>
-<script src="script.js?v=6"></script>
-<script src="host.js?v=2"></script>
+<script src="shell.js?v=1"></script>
+<script src="host.js?v=4"></script>
 </body>
 </html>

@@ -15,18 +15,47 @@
   // Cycled through for new custom hosts so they don't all look identical.
   const NEW_HOST_ICONS = ['🏡', '🏛️', '🏬', '🌇', '🏝️', '🏦', '🏰', '🗼'];
 
+  // The latest month that has bookings — what "busy this month" means here.
+  const monthKeysAll = monthKeysOf(liveData);
+  const LATEST_MONTH = monthKeysAll[monthKeysAll.length - 1];
+
   function computeHostStats() {
     const stats = {};
-    allHostDefs().forEach(h => { stats[h.key] = { months: {}, bookings: 0 }; });
+    allHostDefs().forEach(h => { stats[h.key] = { months: {}, bookings: 0, latest: 0, owed: 0 }; });
 
     allBookings(liveData).forEach(b => {
       const bucket = stats[normalizeApartment(b.apartment)];
       bucket.months[b.month] = (bucket.months[b.month] || 0) + (Number(b.hostShare) || 0);
       bucket.bookings += 1;
+      if (b.month === LATEST_MONTH) bucket.latest += 1;
+      bucket.owed += Math.max((Number(b.hostShare) || 0) - parseHostPaid(b.hostPaid), 0);
     });
 
     return stats;
   }
+
+  // A modern-house photo for each host's card (assets/hosts/). Built-in
+  // hosts get a fixed one; custom hosts get one picked from their key, so
+  // each keeps the same photo every visit.
+  const HOST_PHOTOS = { mikocheni: 1, masaki: 2, sinza: 3, mwenge: 4, mpv: 5, other: 6 };
+  function hostPhoto(key) {
+    let n = HOST_PHOTOS[key];
+    if (!n) n = 6 + ([...key].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 3);
+    return `assets/hosts/house-${n}.jpg`;
+  }
+
+  // How busy a host is in the latest month: 0-5 dots, scaled against the
+  // busiest host.
+  function activity(latest, maxLatest) {
+    const dots = latest ? Math.max(1, Math.round((latest / Math.max(maxLatest, 1)) * 5)) : 0;
+    const label = dots >= 4 ? 'Busy' : dots >= 2 ? 'Steady' : dots === 1 ? 'Quiet' : 'No bookings';
+    return { dots, label, level: dots >= 4 ? 'busy' : 'quiet' };
+  }
+
+  let hostFilter = 'all';
+  const ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>';
+  const TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6.5 7l1 12.5h9l1-12.5"/></svg>';
+  const FLAME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.8 1.2 2.8 2 3 0-3.5-.5-6 1-8.5z"/></svg>';
 
   const hostGrid = document.getElementById('hostGrid');
 
@@ -36,23 +65,50 @@
     const stats = computeHostStats();
     const monthKeys = monthKeysOf(liveData);
 
-    hostGrid.innerHTML = allHostDefs().map(h => {
+    const defs = allHostDefs();
+    const maxLatest = Math.max(...defs.map(h => stats[h.key].latest), 0);
+    const latestLabel = LATEST_MONTH ? MONTHS_FULL[Number(LATEST_MONTH.slice(5)) - 1] : 'this month';
+
+    const cards = defs.map(h => {
       const s = stats[h.key];
       const total = monthKeys.reduce((sum, m) => sum + (s.months[m] || 0), 0);
+      const act = activity(s.latest, maxLatest);
+      const show = hostFilter === 'all'
+        || (hostFilter === 'busy' && act.dots >= 4)
+        || (hostFilter === 'owed' && s.owed > 0)
+        || (hostFilter === 'quiet' && act.dots <= 1);
+      if (!show) return '';
       const monthRow = (label, val) => `
         <div class="host-popup-row"><span>${label}</span><span>${val ? formatTZS(val) : '—'}</span></div>
       `;
       // "Other units" is a catch-all bucket, not a real host — not deletable.
       const deleteBtn = h.key === 'other' ? '' : `
-        <button type="button" class="host-delete-btn" data-key="${h.key}" title="Delete host" aria-label="Delete ${escapeHtml(h.name)}">&times;</button>
+        <button type="button" class="host-delete-btn" data-key="${h.key}" title="Delete host" aria-label="Delete ${escapeHtml(h.name)}">${TRASH}</button>
       `;
+      const dots = Array.from({ length: 5 }, (_, i) => `<i class="${i < act.dots ? 'on' : ''}"></i>`).join('');
 
       return `
-        <div class="host-card" tabindex="0" data-key="${h.key}">
-          ${deleteBtn}
-          <div class="host-icon">${h.icon}</div>
+        <div class="host-card" tabindex="0" data-key="${h.key}" aria-label="${escapeHtml(h.name)} — open booking calendar">
+          <div class="host-notch">
+            ${deleteBtn}
+            <span class="host-open" aria-hidden="true">${ARROW}</span>
+          </div>
+          <img class="host-photo" src="${hostPhoto(h.key)}" alt="" loading="lazy">
           <div class="host-name">${escapeHtml(h.name)}</div>
-          <div class="host-count">${s.bookings} booking${s.bookings === 1 ? '' : 's'}</div>
+          <div class="host-sub">Dar es Salaam · ${s.bookings} booking${s.bookings === 1 ? '' : 's'}</div>
+          <div class="host-foot">
+            <div class="host-foot-col">
+              <span class="host-foot-label">Earned for host</span>
+              <span class="host-tags">
+                <span class="host-tag">${formatTZS(total)}</span>
+                ${s.owed > 0 ? `<span class="host-tag owed">Owed ${formatTZSCompact(s.owed)}</span>` : ''}
+              </span>
+            </div>
+            <div class="host-foot-col right">
+              <span class="host-foot-label host-level ${act.level}">${act.dots >= 4 ? FLAME : ''}${act.label}</span>
+              <span class="host-dots" title="${s.latest} booking${s.latest === 1 ? '' : 's'} in ${latestLabel}">${dots}</span>
+            </div>
+          </div>
           <div class="host-popup">
             <div class="host-popup-title">${escapeHtml(h.name)}</div>
             <div class="host-popup-row"><span>Location</span><span>Dar es Salaam</span></div>
@@ -62,6 +118,10 @@
         </div>
       `;
     }).join('');
+
+    const countEl = document.getElementById('hostCount');
+    if (countEl) countEl.textContent = defs.length;
+    hostGrid.innerHTML = cards || '<p class="host-empty">No hosts match this filter.</p>';
   }
 
   async function deleteHost(key) {
@@ -102,6 +162,31 @@
     });
   }
 
+  // Filter pills: All / Busy / Owed payout / Quiet.
+  const hostFilters = document.getElementById('hostFilters');
+  if (hostFilters) {
+    hostFilters.addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-pill');
+      if (!btn) return;
+      hostFilter = btn.dataset.filter;
+      hostFilters.querySelectorAll('.filter-pill').forEach(b => {
+        b.classList.toggle('active', b === btn);
+        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+      });
+      renderHosts();
+    });
+  }
+
+  // Enter/Space on a focused card opens its calendar, like a click.
+  if (hostGrid) {
+    hostGrid.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('host-card')) {
+        e.preventDefault();
+        openHostCalendar(e.target.dataset.key);
+      }
+    });
+  }
+
   // ---------- Host calendar ----------
   // Shows, day by day for a chosen month, which days a guest checked in
   // with this host — so it's easy to see how many days a month a guest
@@ -137,7 +222,7 @@
 
     calendarHostKey = hostKey;
     calendarMonthKey = todayMonthKey();
-    if (hostCalendarTitle) hostCalendarTitle.textContent = `${def.icon} ${def.name}`;
+    if (hostCalendarTitle) hostCalendarTitle.textContent = def.name;
     renderHostCalendar();
     hostCalendarOverlay.classList.add('show');
   }

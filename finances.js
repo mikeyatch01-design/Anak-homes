@@ -1,17 +1,14 @@
 // ---------- Finances dashboard, driven by real booking data ----------
-// Data model/helpers live in data.js. Chart-drawing primitives live in
-// charts.js. This file computes every number on the page from
-// loadBookings() — nothing here is hand-typed/mocked.
+// Data model/helpers live in data.js. This file computes every number on
+// the page from loadBookings() — nothing here is hand-typed/mocked.
 //
 // Definitions used throughout (Mike is the middleman — the commission
 // on each booking is his income, not the host's):
 //   Net Income       = commission earned this month
 //   Current Balance  = cumulative commission across every recorded month
-//   Expenditures     = host payouts made this month (money paid out to hosts)
-//   Checked in       = bookings whose check-in date has passed (and
-//                       weren't a no-show), for the given month
+//   Total Received   = commission + host payouts, across every month
+//   Upcoming         = commission on bookings the guest hasn't fully paid
 //   Paid bookings    = guest paid the full amount (remaining === 0)
-//   Unpaid bookings  = guest still owes a balance (remaining > 0)
 //   Paid to Host     = host's share actually paid out this month
 //   Unpaid to Host   = host's share not yet paid out this month
 
@@ -22,31 +19,61 @@ await initAppData();
 
 const liveData = loadBookings();
 
-// The dashboard highlights the most recent recorded month and the one
-// before it — not necessarily the literal current calendar month, since
-// a fresh month has no data yet to summarize.
+// The dashboard shows one month at a time — or "All months" together —
+// picked in the header (and remembered). Every calendar month from the
+// first booking up to today can be picked, even ones with no bookings.
+// By default it's the most recent month that has bookings. "Previous" is
+// the calendar month before the one being viewed.
 const dataMonthKeys = monthKeysOf(liveData);
-const CURRENT_MONTH = dataMonthKeys[dataMonthKeys.length - 1];
-const PREVIOUS_MONTH = dataMonthKeys[dataMonthKeys.length - 2];
+const MONTH_KEY_STORE = 'anak-dashboard-month';
+const ALL = 'all';
+let CURRENT_MONTH, PREVIOUS_MONTH, CURRENT_LABEL;
+
+function shiftMonth(key, delta) {
+  const [y, m] = key.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function setMonth(key) {
+  if (key === ALL && dataMonthKeys.length) {
+    CURRENT_MONTH = ALL;
+    PREVIOUS_MONTH = undefined;
+    CURRENT_LABEL = 'All months';
+    return;
+  }
+  CURRENT_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/.test(key || '') ? key : dataMonthKeys[dataMonthKeys.length - 1];
+  PREVIOUS_MONTH = CURRENT_MONTH ? shiftMonth(CURRENT_MONTH, -1) : undefined;
+  CURRENT_LABEL = CURRENT_MONTH ? monthLabel(CURRENT_MONTH) : 'No bookings yet';
+}
+// Every recorded month up to and including the one being viewed — "as of"
+// figures (balance, total received) stop at the viewed month.
+function monthsUpToCurrent() {
+  if (CURRENT_MONTH === ALL) return dataMonthKeys;
+  return dataMonthKeys.filter(k => k <= CURRENT_MONTH);
+}
+let storedMonth = null;
+try { storedMonth = localStorage.getItem(MONTH_KEY_STORE); } catch (e) {}
+setMonth(storedMonth);
+
+const el = (id) => document.getElementById(id);
+
+// ---------- Entrance animation fallback ----------
+document.querySelectorAll('.appear').forEach(node => {
+  node.addEventListener('animationend', () => node.classList.add('is-in'), { once: true });
+});
 
 // ---------- Aggregation helpers ----------
 function sumField(rows, key) {
   return rows.reduce((s, r) => s + (Number(r[key]) || 0), 0);
 }
 
-function monthRows(month) { return liveData[month] || []; }
+function monthRows(month) {
+  if (month === ALL) return allBookings(liveData);
+  return (month && liveData[month]) || [];
+}
 function monthCommission(month) { return sumField(monthRows(month), 'commission'); }
 function monthHostShare(month) { return sumField(monthRows(month), 'hostShare'); }
 function monthHostPaid(month) { return monthRows(month).reduce((s, r) => s + parseHostPaid(r.hostPaid), 0); }
-
-function isCheckedIn(booking, today) {
-  if (booking.status === "DIDN'T STAY") return false;
-  if (!booking.checkin) return false;
-  return new Date(booking.checkin + 'T00:00:00') <= today;
-}
-function monthCheckedInCount(month, today) {
-  return monthRows(month).filter(b => isCheckedIn(b, today)).length;
-}
 
 function pctDelta(curr, prev) {
   if (!prev) return null;
@@ -55,14 +82,13 @@ function pctDelta(curr, prev) {
 
 function paymentSplit(month) {
   const rows = monthRows(month);
-  const total = rows.length || 1;
   const full = rows.filter(r => Number(r.remaining) === 0);
   const half = rows.filter(r => Number(r.remaining) > 0);
   return {
+    total: rows.length,
     fullCount: full.length,
     halfCount: half.length,
-    fullPct: Math.round((full.length / total) * 100),
-    halfPct: Math.round((half.length / total) * 100),
+    fullPct: rows.length ? Math.round((full.length / rows.length) * 100) : 0,
     fullAmount: sumField(full, 'amountPaid'),
     halfAmount: sumField(half, 'remaining'),
   };
@@ -73,45 +99,10 @@ function paymentSplit(month) {
 // owes money on is still "upcoming".
 function commissionSplit(month) {
   const rows = monthRows(month);
-  const paid = rows.filter(r => Number(r.remaining) === 0);
-  const upcoming = rows.filter(r => Number(r.remaining) > 0);
   return {
-    paidAmount: sumField(paid, 'commission'),
-    upcomingAmount: sumField(upcoming, 'commission'),
+    paidAmount: sumField(rows.filter(r => Number(r.remaining) === 0), 'commission'),
+    upcomingAmount: sumField(rows.filter(r => Number(r.remaining) > 0), 'commission'),
   };
-}
-
-// Per-host split of this month's payouts, grouped the same way the Host
-// page groups bookings (by normalized apartment/property name) — how
-// much has actually gone out to each host, and how much of their share
-// is still outstanding.
-function hostPaymentBreakdown(month) {
-  const buckets = {};
-  allHostDefs().forEach(h => { buckets[h.key] = { name: h.name, icon: h.icon, paid: 0, unpaid: 0 }; });
-
-  monthRows(month).forEach(b => {
-    const bucket = buckets[normalizeApartment(b.apartment)];
-    const paid = parseHostPaid(b.hostPaid);
-    const owed = Math.max((Number(b.hostShare) || 0) - paid, 0);
-    bucket.paid += paid;
-    bucket.unpaid += owed;
-  });
-
-  const hosts = Object.values(buckets);
-  return {
-    paid: hosts.filter(h => h.paid > 0).sort((a, b) => b.paid - a.paid),
-    unpaid: hosts.filter(h => h.unpaid > 0).sort((a, b) => b.unpaid - a.unpaid),
-  };
-}
-
-function weekdayDistribution() {
-  const counts = [0, 0, 0, 0, 0, 0, 0]; // Mon..Sun
-  allBookings(liveData).forEach(b => {
-    if (!b.checkin) return;
-    const day = new Date(b.checkin + 'T00:00:00').getDay(); // 0=Sun..6=Sat
-    counts[(day + 6) % 7]++; // shift so Mon=0..Sun=6
-  });
-  return counts;
 }
 
 function daysInMonth(month) {
@@ -120,6 +111,7 @@ function daysInMonth(month) {
 }
 
 function dailyCommission(month) {
+  if (!month) return [];
   const arr = new Array(daysInMonth(month)).fill(0);
   monthRows(month).forEach(b => {
     if (!b.dateBooked) return;
@@ -129,11 +121,8 @@ function dailyCommission(month) {
   return arr;
 }
 
-// Every booking with a check-in date, across all recorded months — not
-// just CURRENT_MONTH, since an upcoming stay can be booked ahead into a
-// future month. Ordered so the ones closest to "now" lead: upcoming
-// check-ins first (soonest first), then past ones after (most recent
-// first) — recently-checked-in and soon-to-check-in both bubble up.
+// Every booking with a check-in date, across all recorded months. Upcoming
+// check-ins first (soonest first), then past ones (most recent first).
 function bookingsFeed(count) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -152,303 +141,390 @@ function checkinCountdownLabel(days) {
   if (days === 0) return 'Today';
   if (days === 1) return 'Tomorrow';
   if (days === -1) return 'Yesterday';
-  if (days > 1) return `${days} days`;
+  if (days > 1) return `In ${days} days`;
   return `${Math.abs(days)} days ago`;
 }
 
-// ---------- Rendering: summary + KPI cards ----------
-function setDelta(el, pct) {
-  if (!el) return;
-  if (pct == null || !isFinite(pct)) { el.innerHTML = ''; return; }
-  const dir = pct >= 0 ? 'up' : 'down';
-  const arrow = pct >= 0 ? '↑' : '↓';
-  el.className = 'delta ' + dir;
-  el.innerHTML = `${arrow} ${Math.abs(pct).toFixed(1)}% <span class="muted">since last month</span>`;
+// ---------- Small formatting helpers ----------
+// Full figure ("TZS 2,000,000") with the currency set smaller.
+function moneyHTML(val) {
+  return '<span class="cur">TZS</span>' + escapeHtml(formatTZS(val).replace(/^TZS /, ''));
 }
 
-function renderSummary() {
-  const today = new Date();
+function setDelta(node, pct) {
+  if (!node) return;
+  if (pct == null || !isFinite(pct)) { node.className = ''; node.textContent = ''; return; }
+  const rounded = Math.round(pct * 10) / 10;
+  node.className = rounded > 0 ? 'up' : rounded < 0 ? 'down' : 'flat';
+  node.textContent = (rounded > 0 ? '+' : rounded < 0 ? '−' : '') + Math.abs(rounded).toFixed(1) + '%';
+  node.title = 'Compared with last month';
+}
 
+// Catmull-Rom → cubic Bézier, for calm curves.
+function smoothPath(pts) {
+  if (pts.length === 1) return `M${pts[0][0]},${pts[0][1]}`;
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+
+function scalePoints(values, W, H, padTop, padBottom) {
+  const vals = values.length === 1 ? [values[0], values[0]] : values;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = max - min || 1;
+  return vals.map((v, i) => [
+    (i / (vals.length - 1)) * W,
+    padTop + (1 - (v - min) / span) * (H - padTop - padBottom),
+  ]);
+}
+
+function drawSquiggle(svgId, values) {
+  const svg = el(svgId);
+  if (!svg || values.length < 2) { if (svg) svg.innerHTML = ''; return; }
+  svg.innerHTML = `<path d="${smoothPath(scalePoints(values, 76, 32, 4, 4).map(([x, y]) => [x + 2, y]))}"/>`;
+}
+
+// ---------- Rendering: header + row 1 ----------
+function renderHeader() {
+  // Greeting follows the time of day on this device.
+  const h = new Date().getHours();
+  const part = h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 17 ? 'Good afternoon' : h >= 17 && h < 21 ? 'Good evening' : 'Good night';
+  el('greetTitle').textContent = `${part}, Anak`;
+}
+// Keep it right if the tab stays open across a change (checked each minute).
+setInterval(renderHeader, 60000);
+
+function renderQuickFigures() {
   const netIncome = monthCommission(CURRENT_MONTH);
-  const netIncomePrev = monthCommission(PREVIOUS_MONTH);
-  const el = (id) => document.getElementById(id);
-  if (el('netIncomeValue')) el('netIncomeValue').textContent = formatTZS(netIncome);
-  setDelta(el('netIncomeDelta'), pctDelta(netIncome, netIncomePrev));
+  el('netIncomeValue').innerHTML = moneyHTML(netIncome);
+  setDelta(el('netIncomeDelta'), pctDelta(netIncome, monthCommission(PREVIOUS_MONTH)));
 
-  const cumulativeAll = dataMonthKeys.reduce((s, m) => s + monthCommission(m), 0);
-  const cumulativePriorToThisMonth = cumulativeAll - netIncome;
-  if (el('currentBalanceValue')) el('currentBalanceValue').textContent = formatTZS(cumulativeAll);
-  // Growth of the balance itself (new total vs. prior total) — NOT
-  // netIncome vs. prior total, which would compare a monthly flow
-  // against a cumulative stock and produce a misleading percentage.
-  setDelta(el('currentBalanceDelta'), pctDelta(cumulativeAll, cumulativePriorToThisMonth));
-
-  // Total Received = commission (Mike's cut) + host payouts, summed
-  // across every recorded month — the full amount that has moved
-  // through the business, not just what came in this month.
-  const totalHostPaidAll = dataMonthKeys.reduce((s, m) => s + monthHostPaid(m), 0);
-  const totalReceivedAll = cumulativeAll + totalHostPaidAll;
-  const totalReceivedThisMonth = netIncome + monthHostPaid(CURRENT_MONTH);
-  const totalReceivedPriorToThisMonth = totalReceivedAll - totalReceivedThisMonth;
-  if (el('totalReceivedValue')) el('totalReceivedValue').textContent = formatTZS(totalReceivedAll);
-  setDelta(el('totalReceivedDelta'), pctDelta(totalReceivedAll, totalReceivedPriorToThisMonth));
+  // Mini bars: commission for the (up to) six months ending at this one.
+  const upTo = monthsUpToCurrent();
+  const recent = upTo.slice(-6).map(monthCommission);
+  const peak = Math.max(...recent, 1);
+  el('netIncomeBars').innerHTML = recent.map(v => `<i style="height:${Math.max(8, Math.round(v / peak * 100))}%"></i>`).join('');
 
   const bookingsCount = monthRows(CURRENT_MONTH).length;
-  const bookingsCountPrev = monthRows(PREVIOUS_MONTH).length;
-  if (el('bookingsCountValue')) el('bookingsCountValue').textContent = bookingsCount;
-  setDelta(el('bookingsCountDelta'), pctDelta(bookingsCount, bookingsCountPrev));
+  el('bookingsCountValue').textContent = bookingsCount;
+  setDelta(el('bookingsCountDelta'), pctDelta(bookingsCount, monthRows(PREVIOUS_MONTH).length));
+  drawSquiggle('bookingsSquiggle', upTo.map(m => monthRows(m).length));
 
-  const checkedIn = monthCheckedInCount(CURRENT_MONTH, today);
-  const checkedInPrev = monthCheckedInCount(PREVIOUS_MONTH, today);
-  if (el('checkedInValue')) el('checkedInValue').textContent = checkedIn;
-  setDelta(el('checkedInDelta'), pctDelta(checkedIn, checkedInPrev));
+  // Upcoming = commission on bookings the guest hasn't fully paid yet.
+  const upcoming = commissionSplit(CURRENT_MONTH).upcomingAmount;
+  el('upcomingStatValue').innerHTML = moneyHTML(upcoming);
+  setDelta(el('upcomingDelta'), pctDelta(upcoming, commissionSplit(PREVIOUS_MONTH).upcomingAmount));
 
-  const paidToHost = monthHostPaid(CURRENT_MONTH);
-  const unpaidToHost = Math.max(monthHostShare(CURRENT_MONTH) - monthHostPaid(CURRENT_MONTH), 0);
-  if (el('paidToHostValue')) el('paidToHostValue').textContent = formatTZS(paidToHost);
-  if (el('unpaidToHostValue')) el('unpaidToHostValue').textContent = formatTZS(unpaidToHost);
+  // Total received = commission + host payouts, across every month up to
+  // the one being viewed.
+  let running = 0;
+  const receivedSeries = upTo.map(m => (running += monthCommission(m) + monthHostPaid(m)));
+  const receivedThisMonth = netIncome + monthHostPaid(CURRENT_MONTH);
+  el('totalReceivedValue').innerHTML = moneyHTML(running);
+  setDelta(el('totalReceivedDelta'), pctDelta(running, running - receivedThisMonth));
+  drawSquiggle('receivedSquiggle', receivedSeries);
+}
 
-  const commSplit = commissionSplit(CURRENT_MONTH);
-  if (el('upcomingCommissionValue')) el('upcomingCommissionValue').textContent = formatTZS(commSplit.upcomingAmount);
-  if (el('paidCommissionValue')) el('paidCommissionValue').textContent = formatTZS(commSplit.paidAmount);
+// ---------- Overall income (the one chart) ----------
+const incomeMonthly = {
+  labels: dataMonthKeys.map(monthLabel),
+  data: dataMonthKeys.map(monthCommission),
+};
+let incomeDaily = { labels: [], data: [] };
+function buildDaily() {
+  // Day-by-day only makes sense for a single month.
+  const single = CURRENT_MONTH && CURRENT_MONTH !== ALL;
+  const dailyBtn = document.querySelector('.seg-btn[data-mode="daily"]');
+  dailyBtn.disabled = !single;
+  if (!single && incomeMode === 'daily') document.querySelector('.seg-btn[data-mode="monthly"]').click();
+  const daily = single ? dailyCommission(CURRENT_MONTH) : [];
+  incomeDaily = { labels: daily.map((_, i) => `${i + 1} ${CURRENT_LABEL}`), data: daily };
+}
+let incomeMode = 'monthly';
+let incomePts = [];
 
-  const currentMonthLabel = CURRENT_MONTH ? monthLabel(CURRENT_MONTH) : '—';
-  ['ring1MonthLabel', 'ring2MonthLabel', 'comm1MonthLabel', 'comm2MonthLabel'].forEach(id => {
-    if (el(id)) el(id).textContent = currentMonthLabel;
-  });
+function renderIncomeCard() {
+  const netIncome = monthCommission(CURRENT_MONTH);
+  const prevIncome = monthCommission(PREVIOUS_MONTH);
+  const deltaPct = pctDelta(netIncome, prevIncome);
 
+  // Current balance = cumulative commission up to the viewed month; its
+  // change is the balance's own growth (new total vs. prior total).
+  const balance = monthsUpToCurrent().reduce((s, m) => s + monthCommission(m), 0);
+  el('currentBalanceValue').textContent = formatTZS(balance);
+  setDelta(el('currentBalanceDelta'), pctDelta(balance, balance - netIncome));
+
+  el('thisMonthLabel').textContent = CURRENT_MONTH === ALL ? 'All months'
+    : CURRENT_MONTH ? MONTHS_FULL[Number(CURRENT_MONTH.slice(5)) - 1] : 'This month';
+  el('thisMonthIncome').textContent = formatTZS(netIncome);
+  setDelta(el('thisMonthDelta'), deltaPct);
+
+  const badge = el('incomeBadge');
+  if (deltaPct == null) {
+    badge.innerHTML = '';
+  } else if (deltaPct >= 0) {
+    badge.className = 'badge-ok';
+    badge.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg>On track';
+  } else {
+    badge.className = 'badge-ok is-down';
+    badge.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l8 8M16 8l-8 8"/></svg>Below last month';
+  }
+}
+
+function drawIncomeChart() {
+  const wrap = el('incomeChart');
+  const set = incomeMode === 'monthly' ? incomeMonthly : incomeDaily;
+  const tip = el('incomeTip');
+  [...wrap.querySelectorAll('svg, .chart-dot')].forEach(n => n.remove());
+  wrap.setAttribute('role', 'img');
+  wrap.setAttribute('aria-label', incomeMode === 'monthly'
+    ? 'Commission per month: ' + set.labels.map((l, i) => `${l} ${formatTZS(set.data[i])}`).join(', ')
+    : `Commission per day in ${CURRENT_LABEL}`);
+  if (!set.data.length) { incomePts = []; return; }
+
+  const W = 600, H = 170;
+  const pts = scalePoints(set.data, W, H, 62, 24);
+  incomePts = pts;
+  const line = smoothPath(pts);
+  wrap.insertAdjacentHTML('afterbegin',
+    `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">` +
+      '<defs><linearGradient id="areaGold" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="#D2A059" stop-opacity=".28"/><stop offset="1" stop-color="#D2A059" stop-opacity="0"/>' +
+      '</linearGradient></defs>' +
+      `<path d="${line} L${W},${H} L0,${H} Z" fill="url(#areaGold)"/>` +
+      `<path class="line" d="${line}"/>` +
+    '</svg>');
+  wrap.insertAdjacentHTML('beforeend', '<span class="chart-dot" id="incomeDot"></span>');
+  tip.classList.remove('show');
+}
+
+function showIncomeTip(clientX) {
+  const wrap = el('incomeChart');
+  const set = incomeMode === 'monthly' ? incomeMonthly : incomeDaily;
+  if (!incomePts.length || !set.data.length) return;
+  const rect = wrap.getBoundingClientRect();
+  const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+  const i = Math.round(ratio * (set.data.length - 1));
+  const p = incomePts[Math.min(i, incomePts.length - 1)];
+  const x = (p[0] / 600) * rect.width;
+  const y = (p[1] / 170) * rect.height;
+  const tip = el('incomeTip');
+  const dot = el('incomeDot');
+  tip.innerHTML = `<span>${escapeHtml(set.labels[i])}</span><b>${formatTZS(set.data[i])}</b>`;
+  tip.style.left = Math.min(Math.max(x, 70), rect.width - 70) + 'px';
+  tip.style.top = y + 'px';
+  dot.style.left = x + 'px';
+  dot.style.top = y + 'px';
+  tip.classList.add('show');
+  dot.classList.add('show');
+}
+function hideIncomeTip() {
+  el('incomeTip').classList.remove('show');
+  const dot = el('incomeDot');
+  if (dot) dot.classList.remove('show');
+}
+
+// ---------- Paid bookings (gauge) ----------
+function renderPaidBookings() {
   const split = paymentSplit(CURRENT_MONTH);
-  if (el('paidDonutTotal')) el('paidDonutTotal').textContent = formatTZSCompact(split.fullAmount);
-  if (el('unpaidDonutTotal')) el('unpaidDonutTotal').textContent = formatTZSCompact(split.halfAmount);
-  if (el('paidLegendFullPct')) el('paidLegendFullPct').textContent = split.fullPct + '%';
-  if (el('paidLegendHalfPct')) el('paidLegendHalfPct').textContent = split.halfPct + '%';
-  if (el('unpaidLegendFullPct')) el('unpaidLegendFullPct').textContent = split.fullPct + '%';
-  if (el('unpaidLegendHalfPct')) el('unpaidLegendHalfPct').textContent = split.halfPct + '%';
-  if (el('unpaidFootnote')) {
-    el('unpaidFootnote').textContent = `${split.halfCount} booking${split.halfCount === 1 ? '' : 's'} not fully paid`;
-  }
+  el('paidPeriod').textContent = CURRENT_MONTH === ALL ? 'Fully paid, all months' : 'Fully paid this month';
+  el('paidAmount').textContent = formatTZS(split.fullAmount);
+  el('paidSub').textContent = split.total
+    ? `${split.fullCount} of ${split.total} booking${split.total === 1 ? '' : 's'} fully paid`
+    : 'No bookings in this month';
+  el('paidPct').textContent = split.fullPct + '%';
+  el('gaugeFill').style.setProperty('--p', split.fullPct);
+  el('paidGauge').setAttribute('aria-label', `${split.fullPct} percent of this month's bookings are fully paid`);
+  el('owedLine').innerHTML = split.halfCount
+    ? `<b>${escapeHtml(formatTZS(split.halfAmount))}</b> still owed on ${split.halfCount} booking${split.halfCount === 1 ? '' : 's'}`
+    : 'Nothing still owed';
 }
 
-function renderHostBreakdown() {
-  const paidList = document.getElementById('paidHostList');
-  const unpaidList = document.getElementById('unpaidHostList');
-  if (!paidList && !unpaidList) return;
-
-  const row = (label, amount) => `
-    <li class="host-mini-item">
-      <span class="host-mini-name">${escapeHtml(label)}</span>
-      <span class="host-mini-amount">${formatTZS(amount)}</span>
-    </li>
-  `;
-
-  // Paid to Host shows every recorded month (not just the current one) —
-  // most recent first — so it reads as a running payout history rather
-  // than a single snapshot. Unpaid to Host stays scoped to the current
-  // month, split by host, since "unpaid" is only meaningful as a
-  // right-now balance, not a historical figure.
-  if (paidList) {
-    const months = dataMonthKeys.slice().reverse();
-    paidList.innerHTML = months.length
-      ? months.map(m => row(monthLabel(m), monthHostPaid(m))).join('')
-      : `<li class="host-mini-empty">No payouts recorded yet.</li>`;
-  }
-  if (unpaidList) {
-    const breakdown = hostPaymentBreakdown(CURRENT_MONTH);
-    unpaidList.innerHTML = breakdown.unpaid.length
-      ? breakdown.unpaid.map(h => row(`${h.icon} ${h.name}`, h.unpaid)).join('')
-      : `<li class="host-mini-empty">Every host is fully paid.</li>`;
-  }
+// ---------- Commission ----------
+function renderCommission() {
+  const c = commissionSplit(CURRENT_MONTH);
+  el('commTitle').textContent = CURRENT_MONTH === ALL ? 'Commission, all months' : 'Commission this month';
+  el('paidCommissionValue').textContent = formatTZS(c.paidAmount);
+  el('upcomingCommissionValue').textContent = formatTZS(c.upcomingAmount);
 }
 
-let lastCheckinRenderDate = null;
-
+// ---------- Booking activity ----------
+// The same feed as the old dashboard table: upcoming check-ins first
+// (soonest at the top), then past ones (most recent first). The card
+// scrolls inside itself rather than cutting the list short.
+let lastFeedRenderDate = null;
 function renderBookingsFeed() {
-  const tbody = document.getElementById('bookingsFeedBody');
-  if (!tbody) return;
-  lastCheckinRenderDate = new Date().toDateString();
-
-  // Was capped at 8 to fit on one screen; the card now scrolls internally
-  // (see .card .table-wrap in style.css), so this can show a much fuller
-  // picture — scrolling within the card, not hard-truncating the list.
+  const body = el('bookingsFeed');
+  lastFeedRenderDate = new Date().toDateString();
   const rows = bookingsFeed(25);
+  const upcomingCount = rows.filter(b => b.daysUntil >= 0).length;
+  el('feedCount').textContent = upcomingCount ? `${upcomingCount} upcoming` : '';
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="checkin-empty">No bookings to show.</td></tr>`;
+    body.innerHTML = '<tr><td colspan="5" class="feed-empty">No bookings to show yet.</td></tr>';
     return;
   }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  tbody.innerHTML = rows.map(b => {
-    const pillClass = b.daysUntil === 0 ? ' today' : b.daysUntil < 0 ? ' past' : '';
+  body.innerHTML = rows.map(b => {
+    const when = b.daysUntil === 0 ? 'today' : b.daysUntil < 0 ? 'past' : 'soon';
+    const status = STATUS_META[computeBookingStatus(b, today)] || STATUS_META.UPCOMING;
     return `
-    <tr>
-      <td><span class="mini-avatar">${escapeHtml(initials(b.guest))}</span>${escapeHtml(b.guest)}</td>
-      <td>${escapeHtml(b.apartment) || '—'}</td>
-      <td><span class="checkin-countdown${pillClass}">${checkinCountdownLabel(b.daysUntil)}</span></td>
-      <td>${statusPill(computeBookingStatus(b, today))}</td>
-      <td>${formatTZS(b.total)}</td>
-    </tr>
-  `;
+      <tr class="${b.daysUntil < 0 ? 'is-past' : ''}">
+        <td><span class="feed-guest"><span class="mini-avatar" aria-hidden="true">${escapeHtml(initials(b.guest))}</span><b>${escapeHtml(b.guest || 'Guest')}</b></span></td>
+        <td><span class="feed-apt">${escapeHtml(b.apartment) || '—'}</span></td>
+        <td><span class="when ${when}">${checkinCountdownLabel(b.daysUntil)}</span></td>
+        <td><span class="status ${status.cls}">${status.label}</span></td>
+        <td class="num">${escapeHtml(formatTZS(b.total).replace(/^TZS /, ''))}</td>
+      </tr>`;
   }).join('');
 }
 
-// ---------- Keep the countdown correct as days pass, tab left open ----------
+// Keep the countdown right as days pass with the tab left open.
 function msUntilNextLocalMidnight() {
   const now = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
-  return next - now;
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5) - now;
 }
-
-function scheduleCheckinRefresh() {
-  setTimeout(() => {
-    renderBookingsFeed();
-    scheduleCheckinRefresh();
-  }, msUntilNextLocalMidnight());
-}
-
-// A sleeping/backgrounded laptop can miss the midnight setTimeout entirely
-// (it doesn't fire while suspended) — catch that on wake by re-rendering
-// whenever the calendar day has moved on since the last render.
+(function scheduleFeedRefresh() {
+  setTimeout(() => { renderBookingsFeed(); scheduleFeedRefresh(); }, msUntilNextLocalMidnight());
+})();
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible') return;
-  if (new Date().toDateString() !== lastCheckinRenderDate) renderBookingsFeed();
+  if (document.visibilityState === 'visible' && new Date().toDateString() !== lastFeedRenderDate) renderBookingsFeed();
 });
 
-// ---------- Charts ----------
-const bookingsMonthsData = { labels: dataMonthKeys.map(monthShortLabel), data: dataMonthKeys.map(m => monthRows(m).length) };
-const bookingsDaysData = { labels: WEEKDAY_LABELS, data: weekdayDistribution() };
-const bookingsDataSets = { months: bookingsMonthsData, days: bookingsDaysData };
-
-const incomeMonthlyData = { labels: dataMonthKeys.map(monthShortLabel), keys: dataMonthKeys, data: dataMonthKeys.map(m => monthCommission(m)), axisStep: 500000 };
-const currentMonthDailyCommission = dailyCommission(CURRENT_MONTH);
-const incomeDailyData = { labels: currentMonthDailyCommission.map((_, i) => String(i + 1)), data: currentMonthDailyCommission, axisStep: 50000 };
-const incomeDataSets = { monthly: incomeMonthlyData, daily: incomeDailyData };
-
-let bookingsMode = 'months';
-let incomeMode = 'monthly';
-let incomeHoverIndex = null;
-let incomePoints = [];
-
-function renderIncomeChart() {
-  const income = incomeDataSets[incomeMode];
-  incomePoints = drawLineChart('lineChart', income.labels, income.data, '#12897E', income.axisStep, incomeHoverIndex);
+// ---------- Paid to host (this month only) ----------
+function renderHost() {
+  const paid = monthHostPaid(CURRENT_MONTH);
+  const unpaid = Math.max(monthHostShare(CURRENT_MONTH) - paid, 0);
+  el('paidToHostValue').textContent = formatTZS(paid);
+  el('unpaidToHostValue').textContent = formatTZS(unpaid);
+  el('hostMonthLabel').textContent = CURRENT_LABEL;
 }
 
-function redrawAllCharts() {
-  const split = paymentSplit(CURRENT_MONTH);
-  // Same underlying split feeds both donuts — they're two views of the
-  // same booking pool (full paid vs half paid), so they stay in sync.
-  const paymentSplitSegments = [
-    { value: split.fullCount, color: '#4F81AF' }, // Full paid
-    { value: split.halfCount, color: '#F5B942' }, // Half paid
-  ];
-  drawDonut('donutBookings', paymentSplitSegments);
-  drawDonut('donutUnpaid', paymentSplitSegments);
-
-  const bookings = bookingsDataSets[bookingsMode];
-  drawBarChart('barChart', bookings.labels, bookings.data, '#4F81AF', 10);
-
-  renderIncomeChart();
+// ---------- Booking report (pops up from the Bookings card) ----------
+// Every booking in the viewed month, by where it stands today. "Cancelled /
+// removed" counts that month's bookings sitting in the Trash.
+function renderReport() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const counts = { UPCOMING: 0, ACTIVE: 0, COMPLETED: 0, "DIDN'T STAY": 0 };
+  const rows = monthRows(CURRENT_MONTH);
+  rows.forEach(b => { counts[computeBookingStatus(b, today)]++; });
+  const removed = loadTrashedBookings().filter(b => CURRENT_MONTH === ALL || b._monthKey === CURRENT_MONTH).length;
+  el('reportMonth').textContent = CURRENT_LABEL;
+  el('repTotal').textContent = rows.length;
+  el('repUpcoming').textContent = counts.UPCOMING;
+  el('repActive').textContent = counts.ACTIVE;
+  el('repCompleted').textContent = counts.COMPLETED;
+  el('repNoShow').textContent = counts["DIDN'T STAY"];
+  el('repRemoved').textContent = removed;
+  el('repAllTime').textContent = allBookings(liveData).length;
 }
 
-// ---------- Chart mode toggles (Months/Days, Monthly/Daily) ----------
-document.querySelectorAll('.toggle-group').forEach(group => {
-  group.addEventListener('click', (e) => {
-    const btn = e.target.closest('.toggle-btn');
-    if (!btn || btn.classList.contains('active')) return;
-
-    group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    if (group.dataset.chart === 'bookings') {
-      bookingsMode = btn.dataset.mode;
-    } else if (group.dataset.chart === 'income') {
-      incomeMode = btn.dataset.mode;
-      hideIncomeTooltip();
+// ---------- Rolling paper: cards curl back into the top bar ----------
+// As a card's top edge reaches the bar, it tips back (rotateX around its
+// bottom edge, so the top recedes into the bar), shrinks a touch and fades — as if the page were a sheet being
+// rolled up into the bar. Purely visual; skipped for reduced motion.
+const rollCards = [...document.querySelectorAll('.bento > .card, .bento > .stat-slot')];
+const topbarEl = el('topbar');
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+let rollQueued = false;
+function roll() {
+  rollQueued = false;
+  if (reduceMotion.matches) return;
+  const edge = topbarEl.getBoundingClientRect().bottom;
+  rollCards.forEach(card => {
+    const r = card.getBoundingClientRect();
+    // 0 while the card is clear of the bar, rising to 1 as most of it has
+    // slid underneath.
+    const p = Math.min(Math.max((edge + 24 - r.top) / Math.max(r.height * 0.85, 120), 0), 1);
+    if (p === 0) {
+      if (card.style.transform) { card.style.transform = ''; card.style.opacity = ''; }
+      return;
     }
-    redrawAllCharts();
+    const eased = p * p * (3 - 2 * p);
+    card.style.transform = `perspective(1100px) rotateX(${(eased * 38).toFixed(2)}deg) scale(${(1 - eased * 0.07).toFixed(3)})`;
+    card.style.opacity = (1 - eased * 0.75).toFixed(3);
+  });
+}
+function queueRoll() { if (!rollQueued) { rollQueued = true; requestAnimationFrame(roll); } }
+window.addEventListener('scroll', queueRoll, { passive: true });
+window.addEventListener('resize', queueRoll);
+
+// ---------- Interactions ----------
+const reportBtn = el('reportBtn');
+const reportPop = el('reportPop');
+function setReport(open) {
+  reportPop.hidden = !open;
+  reportBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+reportBtn.addEventListener('click', e => { e.stopPropagation(); setReport(reportPop.hidden); });
+el('reportClose').addEventListener('click', () => { setReport(false); reportBtn.focus(); });
+document.addEventListener('click', e => { if (!reportPop.hidden && !reportPop.contains(e.target)) setReport(false); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !reportPop.hidden) { setReport(false); reportBtn.focus(); }
+});
+
+document.querySelectorAll('.seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('active')) return;
+    document.querySelectorAll('.seg-btn').forEach(b => {
+      b.classList.toggle('active', b === btn);
+      b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+    });
+    incomeMode = btn.dataset.mode;
+    drawIncomeChart();
   });
 });
 
-// ---------- Income chart tooltip (hover / touch) ----------
-const lineCanvas = document.getElementById('lineChart');
-const incomeTooltip = document.getElementById('incomeTooltip');
+const chartWrap = el('incomeChart');
+chartWrap.addEventListener('mousemove', e => showIncomeTip(e.clientX));
+chartWrap.addEventListener('mouseleave', hideIncomeTip);
+chartWrap.addEventListener('touchstart', e => showIncomeTip(e.touches[0].clientX), { passive: true });
+chartWrap.addEventListener('touchmove', e => showIncomeTip(e.touches[0].clientX), { passive: true });
+chartWrap.addEventListener('touchend', hideIncomeTip);
 
-function incomePointLabel(index) {
-  const income = incomeDataSets[incomeMode];
-  if (incomeMode === 'monthly') return monthLabel(income.keys[index]);
-  return `${income.labels[index]} ${monthLabel(CURRENT_MONTH)}`;
+const profileBtn = el('profileBtn');
+const profileMenu = el('profileMenu');
+function setMenu(open) {
+  profileMenu.hidden = !open;
+  profileBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
+profileBtn.addEventListener('click', e => { e.stopPropagation(); setMenu(profileMenu.hidden); });
+document.addEventListener('click', e => { if (!profileMenu.contains(e.target)) setMenu(false); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !profileMenu.hidden) { setMenu(false); profileBtn.focus(); }
+});
+// (The menu's "Sign out" is #signOutLink, which auth.js wires up.)
 
-function showIncomeTooltip(index) {
-  if (!lineCanvas || !incomeTooltip) return;
-  incomeHoverIndex = index;
-  renderIncomeChart();
-
-  const p = incomePoints[index];
-  if (!p) return;
-
-  const income = incomeDataSets[incomeMode];
-  incomeTooltip.innerHTML =
-    `<span class="tt-label">${incomePointLabel(index)}</span>` +
-    `<span class="tt-value">${formatTZS(income.data[index])}</span>`;
-  incomeTooltip.style.left = p.x + 'px';
-  incomeTooltip.style.top = p.y + 'px';
-  incomeTooltip.classList.add('show');
-}
-
-function hideIncomeTooltip() {
-  if (!incomeTooltip) return;
-  incomeHoverIndex = null;
-  incomeTooltip.classList.remove('show');
-  renderIncomeChart();
-}
-
-function nearestIncomeIndex(clientX) {
-  const rect = lineCanvas.getBoundingClientRect();
-  const x = clientX - rect.left;
-  let nearest = 0, minDist = Infinity;
-  incomePoints.forEach((p, i) => {
-    const d = Math.abs(p.x - x);
-    if (d < minDist) { minDist = d; nearest = i; }
-  });
-  return nearest;
-}
-
-if (lineCanvas) {
-  lineCanvas.addEventListener('mousemove', (e) => showIncomeTooltip(nearestIncomeIndex(e.clientX)));
-  lineCanvas.addEventListener('mouseleave', hideIncomeTooltip);
-
-  lineCanvas.addEventListener('touchstart', (e) => {
-    showIncomeTooltip(nearestIncomeIndex(e.touches[0].clientX));
-  }, { passive: true });
-  lineCanvas.addEventListener('touchmove', (e) => {
-    showIncomeTooltip(nearestIncomeIndex(e.touches[0].clientX));
-    e.preventDefault();
-  }, { passive: false });
-  lineCanvas.addEventListener('touchend', hideIncomeTooltip);
-  lineCanvas.addEventListener('touchcancel', hideIncomeTooltip);
-}
-
-// ---------- React to theme/resize changes dispatched by script.js ----------
-document.addEventListener('themechange', redrawAllCharts);
-document.addEventListener('appresize', () => { hideIncomeTooltip(); redrawAllCharts(); });
-
-// ---------- Booking Activity card links to the Bookings page ----------
-const bookingActivityCard = document.getElementById('bookingActivityCard');
-if (bookingActivityCard) {
-  bookingActivityCard.addEventListener('click', () => { location.href = 'bookings.html'; });
-  bookingActivityCard.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      location.href = 'bookings.html';
-    }
-  });
-}
+// ---------- Month picker (grid panel, shared with Bookings) ----------
+const monthPicker = createMonthPicker(el('monthPicker'), {
+  allowAll: true,
+  getValue: () => CURRENT_MONTH,
+  hasData: (key) => !!(liveData[key] || []).length,
+  onSelect: (key) => {
+    setMonth(key);
+    try { localStorage.setItem(MONTH_KEY_STORE, CURRENT_MONTH); } catch (e) {}
+    renderMonth();
+  },
+});
 
 // ---------- Init ----------
-renderSummary();
-renderHostBreakdown();
+function renderMonth() {
+  buildDaily();
+  renderHeader();
+  renderQuickFigures();
+  renderIncomeCard();
+  drawIncomeChart();
+  renderPaidBookings();
+  renderCommission();
+  renderHost();
+  renderReport();
+}
+renderMonth();
 renderBookingsFeed();
-scheduleCheckinRefresh();
-redrawAllCharts();
 })();

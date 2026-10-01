@@ -2,258 +2,227 @@
 <html lang="en" class="auth-checking">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anak Homes Analytics Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Anak Homes — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=21">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css?v=17">
 </head>
-<body data-bg-day="assets/bg-dashboard-day.jpg" data-bg-night="assets/bg-dashboard-night.jpg">
+<body class="dash-page">
 
-<div class="page-bg" id="pageBg" aria-hidden="true"></div>
-<div class="page-bg-overlay" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
 
-<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
-  <span></span><span></span><span></span>
-</button>
+<!-- Top bar: stays put while the page rolls up underneath it -->
+<header class="topbar" id="topbar">
+  <div class="topbar-beam" aria-hidden="true"></div>
+  <a class="brand" href="index.html">
+    <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-5.5h4V20h3.5a1 1 0 0 0 1-1v-9"/></svg></span>
+    <span class="brand-text">Anak Homes</span>
+  </a>
 
-<div class="app">
+  <nav class="tnav" aria-label="Main">
+    <a href="index.html" class="active" aria-current="page">Dashboard</a>
+    <a href="bookings.html">Bookings</a>
+    <a href="host.html">Hosts</a>
+  </nav>
 
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <button class="sidebar-collapse-toggle" id="sidebarCollapseToggle" aria-label="Collapse sidebar" title="Collapse sidebar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
-    </button>
-
-    <div class="logo">
-      <svg class="logo-house" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 11.5 12 4l9 7.5"/>
-        <path d="M5.5 10v9a1 1 0 0 0 1 1H10v-5.5h4V20h3.5a1 1 0 0 0 1-1v-9"/>
-      </svg>
-      <span class="logo-text">Anak Homes</span>
-    </div>
-
-    <nav class="nav">
-      <a href="index.html" class="nav-item active" title="Finances">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        <span class="nav-label">Finances</span>
-      </a>
-      <a href="bookings.html" class="nav-item" title="Bookings">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 0 1 4 4L7 21l-4 1 1-4Z"/><path d="m14.5 5.5 4 4"/></svg>
-        <span class="nav-label">Bookings</span>
-      </a>
-      <a href="host.html" class="nav-item" title="Host">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
-        <span class="nav-label">Host</span>
-      </a>
-    </nav>
-
-    <div class="sidebar-bottom">
-      <div class="nav-bottom">
-        <a href="settings.html" class="nav-item" title="Settings">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
-          <span class="nav-label">Settings</span>
-        </a>
-        <a href="#" class="nav-item" id="signOutLink" title="Sign Out">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M18.4 6.6a8 8 0 1 1-12.8 0"/></svg>
-          <span class="nav-label">Sign Out</span>
-        </a>
+  <div class="topbar-right">
+    <div id="monthPicker"></div>
+    <a class="round-btn search-btn" href="bookings.html" aria-label="Search bookings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+    </a>
+    <div class="profile">
+      <button class="profile-btn" type="button" id="profileBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="profileMenu">
+        <span class="avatar" aria-hidden="true">A</span>
+        <span class="profile-text">
+          <span class="profile-role">Owner</span>
+          <span class="profile-name">Anak</span>
+        </span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+      </button>
+      <div class="profile-menu" id="profileMenu" role="menu" hidden>
+        <a href="settings.html" role="menuitem">Settings</a>
+        <a href="#" role="menuitem" id="signOutLink">Sign out</a>
       </div>
     </div>
-  </aside>
+  </div>
+</header>
 
-  <div class="overlay" id="overlay"></div>
+<main class="dash">
+  <section class="greet appear appear--soft">
+    <h1 id="greetTitle">Hello, Anak!</h1>
+  </section>
 
-  <!-- Main -->
-  <main class="main">
-
-    <header class="topbar">
-      <div class="topbar-title">
-        <h1>Analytics</h1>
-        <p class="welcome" id="welcomeText">Welcome back, Anak</p>
+  <div class="bento">
+    <!-- Row 1 -->
+    <article class="card stat is-gold appear appear--soft" style="--d:.06s">
+      <div class="stat-text">
+        <h2 class="stat-label">Net income <em id="netIncomeDelta"></em></h2>
+        <p class="stat-value" id="netIncomeValue">—</p>
       </div>
-      <div class="topbar-actions">
-        <div class="theme-toggle" id="themeToggle" role="button" aria-label="Toggle theme">
-          <span class="sun">☀</span>
-          <span class="dot"></span>
-          <span class="moon">☾</span>
+      <div class="mini-bars" id="netIncomeBars" aria-hidden="true"></div>
+    </article>
+
+    <article class="card stat shiny appear appear--soft" style="--d:.1s">
+      <div class="stat-text">
+        <h2 class="stat-label">Total received <em id="totalReceivedDelta"></em></h2>
+        <p class="stat-value" id="totalReceivedValue">—</p>
+      </div>
+      <svg class="squiggle" id="receivedSquiggle" viewBox="0 0 80 32" aria-hidden="true"></svg>
+    </article>
+
+    <article class="card stat shiny appear appear--soft" style="--d:.14s">
+      <span class="stat-icon warm" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5v3.2a4 4 0 0 0 1.6 3.2L12 12l2.4-2.1A4 4 0 0 0 16 6.7V3.5"/><path d="M8 20.5v-3.2a4 4 0 0 1 1.6-3.2L12 12l2.4 2.1a4 4 0 0 1 1.6 3.2v3.2"/></svg>
+      </span>
+      <div class="stat-text">
+        <h2 class="stat-label">Upcoming <em id="upcomingDelta"></em></h2>
+        <p class="stat-value" id="upcomingStatValue">—</p>
+      </div>
+    </article>
+
+    <!-- Bookings: press to pop up the full booking report -->
+    <div class="stat-slot appear appear--soft" style="--d:.18s">
+      <button type="button" class="card stat shiny stat-btn" id="reportBtn" aria-expanded="false" aria-controls="reportPop">
+        <span class="stat-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+        </span>
+        <span class="stat-text">
+          <span class="stat-label">Bookings <em id="bookingsCountDelta"></em></span>
+          <span class="stat-value" id="bookingsCountValue">—</span>
+          <span class="stat-hint">View report <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span>
+        </span>
+        <svg class="squiggle" id="bookingsSquiggle" viewBox="0 0 80 32" aria-hidden="true"></svg>
+      </button>
+      <div class="report-pop" id="reportPop" role="dialog" aria-labelledby="reportTitle" hidden>
+        <div class="report-head">
+          <h2 id="reportTitle">Booking report</h2>
+          <span class="report-month" id="reportMonth">—</span>
+          <button type="button" class="pop-close" id="reportClose" aria-label="Close report">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>
+          </button>
         </div>
-        <div class="user-chip">
-          <div class="avatar" id="userAvatar">A</div>
-          <span id="userName">Anak</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- Top financial summary -->
-    <section class="summary-grid">
-      <div class="card summary-card">
-        <div class="summary-label">Net Income</div>
-        <div class="summary-value" id="netIncomeValue">—</div>
-        <div class="delta" id="netIncomeDelta"></div>
-      </div>
-      <div class="card summary-card">
-        <div class="summary-label">Current Balance</div>
-        <div class="summary-value" id="currentBalanceValue">—</div>
-        <div class="delta" id="currentBalanceDelta"></div>
-      </div>
-      <div class="card summary-card">
-        <div class="summary-label">Total Received</div>
-        <div class="summary-value" id="totalReceivedValue">—</div>
-        <div class="delta" id="totalReceivedDelta"></div>
-      </div>
-    </section>
-
-    <!-- KPI stat cards -->
-    <section class="stats-grid">
-      <div class="card stat-card">
-        <div class="stat-top">
-          <span class="stat-label">Bookings</span>
-          <span class="stat-icon">📅</span>
-        </div>
-        <div class="stat-value" id="bookingsCountValue">—</div>
-        <div class="delta" id="bookingsCountDelta"></div>
-      </div>
-
-      <div class="card stat-card">
-        <div class="stat-top">
-          <span class="stat-label">Checked in</span>
-          <span class="stat-icon">✓</span>
-        </div>
-        <div class="stat-value" id="checkedInValue">—</div>
-        <div class="delta" id="checkedInDelta"></div>
-      </div>
-
-      <div class="card stat-card donut-card">
-        <div class="stat-top">
-          <span class="stat-label">Paid bookings</span>
-        </div>
-        <div class="donut-wrap">
-          <canvas class="donut" id="donutBookings" width="148" height="148"></canvas>
-          <div class="donut-center">
-            <span class="donut-total" id="paidDonutTotal">—</span>
-            <span class="donut-sub">Full paid</span>
-          </div>
-        </div>
-        <ul class="legend">
-          <li><span class="dot" style="background:#4F81AF"></span>Full paid <b id="paidLegendFullPct">—</b></li>
-          <li><span class="dot" style="background:#F5B942"></span>Half paid <b id="paidLegendHalfPct">—</b></li>
+        <ul class="report-list">
+          <li><span class="rdot total"></span><span class="rlabel">Total bookings</span><b id="repTotal">—</b></li>
+          <li><span class="rdot upcoming"></span><span class="rlabel">Upcoming</span><b id="repUpcoming">—</b></li>
+          <li><span class="rdot active"></span><span class="rlabel">Staying now</span><b id="repActive">—</b></li>
+          <li><span class="rdot done"></span><span class="rlabel">Completed</span><b id="repCompleted">—</b></li>
+          <li><span class="rdot noshow"></span><span class="rlabel">Didn't show up</span><b id="repNoShow">—</b></li>
+          <li><span class="rdot removed"></span><span class="rlabel">Cancelled / removed</span><b id="repRemoved">—</b></li>
         </ul>
+        <p class="report-foot"><span id="repAllTime">—</span> bookings all time</p>
       </div>
+    </div>
 
-      <div class="card stat-card donut-card">
-        <div class="stat-top">
-          <span class="stat-label">Unpaid bookings</span>
+    <!-- Row 2 -->
+    <article class="card income span-2 appear appear--soft" style="--d:.22s">
+      <header class="card-head">
+        <h2>Overall income</h2>
+        <span class="badge-ok" id="incomeBadge"></span>
+        <div class="seg" role="group" aria-label="Chart range">
+          <button type="button" class="seg-btn active" data-mode="monthly" aria-pressed="true">Monthly</button>
+          <button type="button" class="seg-btn" data-mode="daily" aria-pressed="false">Daily</button>
         </div>
-        <div class="donut-wrap">
-          <canvas class="donut" id="donutUnpaid" width="148" height="148"></canvas>
-          <div class="donut-center">
-            <span class="donut-total" id="unpaidDonutTotal">—</span>
-            <span class="donut-sub">Half paid</span>
-          </div>
+      </header>
+      <div class="chips">
+        <div class="chip shiny">
+          <span class="chip-label">Current balance</span>
+          <span class="chip-row"><b id="currentBalanceValue">—</b><em id="currentBalanceDelta"></em></span>
         </div>
-        <ul class="legend">
-          <li><span class="dot" style="background:#4F81AF"></span>Full paid <b id="unpaidLegendFullPct">—</b></li>
-          <li><span class="dot" style="background:#F5B942"></span>Half paid <b id="unpaidLegendHalfPct">—</b></li>
-        </ul>
-        <div class="donut-footnote" id="unpaidFootnote">—</div>
-      </div>
-
-    </section>
-
-    <!-- Charts row -->
-    <section class="charts-grid">
-      <div class="card table-card area-sales clickable-card" id="bookingActivityCard" role="link" tabindex="0">
-        <div class="card-header">
-          <h2>Booking Activity</h2>
-          <span class="refresh">⟳</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Guest</th><th>Apartment</th><th>Remaining</th><th>Status</th><th>Amount</th></tr>
-            </thead>
-            <tbody id="bookingsFeedBody"></tbody>
-          </table>
+        <div class="chip shiny">
+          <span class="chip-label" id="thisMonthLabel">This month</span>
+          <span class="chip-row"><b id="thisMonthIncome">—</b><em id="thisMonthDelta"></em></span>
         </div>
       </div>
-
-      <div class="card simple-card area-ring1">
-        <div class="simple-top">
-          <span class="ring-icon">💳</span>
-        </div>
-        <div class="ring-label">Paid to Host</div>
-        <div class="ring-value" id="paidToHostValue">—</div>
-        <div class="muted small" id="ring1MonthLabel">—</div>
-        <ul class="host-mini-list" id="paidHostList"></ul>
+      <div class="area" id="incomeChart">
+        <div class="chart-tip" id="incomeTip" aria-hidden="true"></div>
       </div>
+    </article>
 
-      <div class="card simple-card area-ring2">
-        <div class="simple-top">
-          <span class="ring-icon">💰</span>
-        </div>
-        <div class="ring-label">Unpaid to Host</div>
-        <div class="ring-value" id="unpaidToHostValue">—</div>
-        <div class="muted small" id="ring2MonthLabel">—</div>
-        <ul class="host-mini-list" id="unpaidHostList"></ul>
+    <article class="card paid appear appear--soft" style="--d:.26s">
+      <h2>Paid bookings</h2>
+      <p class="muted-sm" id="paidPeriod">Fully paid this month</p>
+      <p class="earn-value" id="paidAmount">—</p>
+      <p class="muted-sm" id="paidSub">—</p>
+      <div class="gauge" role="img" id="paidGauge" aria-label="">
+        <svg viewBox="0 0 200 110" aria-hidden="true">
+          <defs>
+            <linearGradient id="gaugeGold" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#8C6531"/><stop offset="1" stop-color="#F3D9A4"/>
+            </linearGradient>
+          </defs>
+          <path class="gauge-track" d="M20 100a80 80 0 0 1 160 0"/>
+          <path class="gauge-fill" id="gaugeFill" d="M20 100a80 80 0 0 1 160 0" pathLength="100" style="--p:0"/>
+        </svg>
+        <span class="gauge-num" id="paidPct">—</span>
       </div>
+      <p class="owed" id="owedLine"></p>
+    </article>
 
-      <div class="card simple-card area-comm1">
-        <div class="simple-top">
-          <span class="ring-icon">⏳</span>
-        </div>
-        <div class="ring-label">Upcoming Commission</div>
-        <div class="ring-value" id="upcomingCommissionValue">—</div>
-        <div class="muted small" id="comm1MonthLabel">—</div>
+    <article class="card host appear appear--soft" style="--d:.3s">
+      <span class="host-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5h18"/><path d="M7 15h4"/></svg>
+      </span>
+      <h2>Paid to host</h2>
+      <p class="host-value" id="paidToHostValue">—</p>
+      <p class="muted-sm" id="hostMonthLabel">—</p>
+      <p class="host-unpaid">Unpaid <b id="unpaidToHostValue">—</b></p>
+      <a class="btn-soft" href="host.html">Open hosts</a>
+    </article>
+
+    <!-- Row 3 -->
+    <article class="card wallet span-2 appear appear--soft" style="--d:.34s">
+      <div class="wallet-text">
+        <h2 id="commTitle">Commission this month</h2>
+                <dl class="comm">
+          <div><dt>Fully paid</dt><dd id="paidCommissionValue">—</dd></div>
+          <div><dt>Upcoming</dt><dd id="upcomingCommissionValue">—</dd></div>
+        </dl>
       </div>
-
-      <div class="card simple-card area-comm2">
-        <div class="simple-top">
-          <span class="ring-icon">✅</span>
-        </div>
-        <div class="ring-label">Fully Paid Commission</div>
-        <div class="ring-value" id="paidCommissionValue">—</div>
-        <div class="muted small" id="comm2MonthLabel">—</div>
-      </div>
-
-      <div class="card chart-card area-table">
-        <div class="card-header">
-          <h2>Bookings</h2>
-          <div class="toggle-group" data-chart="bookings">
-            <button type="button" class="toggle-btn active" data-mode="months">Months</button>
-            <button type="button" class="toggle-btn" data-mode="days">Days</button>
-          </div>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="barChart"></canvas>
-        </div>
-      </div>
-
-      <div class="card chart-card area-line">
-        <div class="card-header">
-          <h2>Overall Income</h2>
-          <div class="toggle-group" data-chart="income">
-            <button type="button" class="toggle-btn active" data-mode="monthly">Monthly</button>
-            <button type="button" class="toggle-btn" data-mode="daily">Daily</button>
-          </div>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="lineChart"></canvas>
-          <div class="chart-tooltip" id="incomeTooltip"></div>
+      <div class="cards-stack" aria-hidden="true">
+        <div class="stack">
+          <div class="bcard c4"><span class="bnum">ANAK HOMES</span><span class="bchip"></span></div>
+          <div class="bcard c3"><span class="bnum">ANAK HOMES</span><span class="bchip"></span></div>
+          <div class="bcard c2"><span class="bnum">ANAK HOMES</span><span class="bchip"></span></div>
+          <div class="bcard c1"><span class="bnum">ANAK HOMES</span><span class="bchip"></span><span class="bmark"><i></i><i></i></span></div>
         </div>
       </div>
-    </section>
+    </article>
 
-  </main>
-</div>
+    <article class="card activity shiny span-2 appear appear--soft" style="--d:.38s">
+      <header class="card-head">
+        <h2>Booking activity</h2>
+        <span class="muted-sm" id="feedCount"></span>
+        <a class="link-sm" href="bookings.html">View all</a>
+      </header>
+      <div class="feed-wrap">
+        <table class="feed">
+          <thead>
+            <tr><th scope="col" class="c-guest">Guest</th><th scope="col" class="c-apt">Apartment</th><th scope="col" class="c-when">Check-in</th><th scope="col" class="c-status">Status</th><th scope="col" class="num c-amt">Amount (TZS)</th></tr>
+          </thead>
+          <tbody id="bookingsFeed"></tbody>
+        </table>
+      </div>
+    </article>
+
+  </div>
+</main>
+
+<!-- Phone navigation: a floating tab bar at the bottom, Apple Music style -->
+<nav class="tabbar" aria-label="Main">
+  <a href="index.html" class="active" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg><span>Dashboard</span></a>
+  <a href="bookings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 14.5l2 2 4-4"/></svg><span>Bookings</span></a>
+  <a href="host.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg><span>Hosts</span></a>
+  <a href="settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Settings</span></a>
+</nav>
 
 <script src="supabase.min.js"></script>
 <script src="supabaseClient.js?v=2"></script>
 <script src="data.js?v=4"></script>
 <script src="auth.js?v=2"></script>
-<script src="charts.js?v=2"></script>
-<script src="script.js?v=6"></script>
-<script src="finances.js?v=4"></script>
+<script src="monthpicker.js?v=1"></script>
+<script src="finances.js?v=15"></script>
 </body>
 </html>
