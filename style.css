@@ -42,16 +42,19 @@
   --fs-3xl: 28px;
 }
 
+/* "Celestial black" — a deep blue-black rather than a neutral charcoal,
+   so dark mode reads as blue-and-black rather than just blue-on-gray. */
 body.dark-theme {
-  --bg: #0F1117;
-  --card: #171A23;
+  --bg: #06080F;
+  --card: #0D1220;
   --text: #F3F4F6;
-  --text-muted: #9CA3AF;
-  --border: #262A36;
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-  --glass: rgba(23, 26, 35, .62);
-  --glass-border: rgba(255, 255, 255, .08);
-  --glass-shadow: 0 16px 40px -12px rgba(0, 0, 0, .55);
+  --text-muted: #8993AB;
+  --border: #1B2234;
+  --blue-light: rgba(79, 129, 175, .18);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --glass: rgba(13, 18, 32, .62);
+  --glass-border: rgba(150, 190, 230, .1);
+  --glass-shadow: 0 16px 40px -12px rgba(0, 0, 0, .6);
 }
 
 * { box-sizing: border-box; }
@@ -306,12 +309,11 @@ body.dark-theme .page-bg-overlay {
 
 .nav-item.active {
   background: var(--blue-light);
-  color: #7A3418;
+  color: #1B4A66;
 }
 
 body.dark-theme .nav-item.active {
-  background: rgba(79, 129, 175, 0.18);
-  color: #F2C2AC;
+  color: #BFDCF2;
 }
 
 .nav-icon {
@@ -948,11 +950,13 @@ tbody tr {
   height: 22px;
   border-radius: 50%;
   background: var(--blue-light);
-  color: #7A3418;
+  color: #1B4A66;
   font-size: var(--fs-2xs);
   font-weight: 700;
   margin-right: 8px;
 }
+
+body.dark-theme .mini-avatar { color: #BFDCF2; }
 
 .status {
   padding: 3px 10px;
