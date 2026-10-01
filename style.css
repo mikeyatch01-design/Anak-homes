@@ -740,6 +740,18 @@ body.dark-theme .card.touch-active {
   max-height: none;
 }
 
+/* Sort/month-picker/import/+Add booking move in here (see bookings.js)
+   so every control that's normally above the card is still reachable
+   without shrinking back down first. */
+.card.is-maximized .page-toolbar {
+  justify-content: flex-start;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card.is-maximized .settings-note:empty { display: none; }
+
 body.has-maximized-card { overflow: hidden; }
 
 @media (max-width: 480px) {

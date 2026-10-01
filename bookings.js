@@ -362,9 +362,13 @@
   // ---------- Expand the bookings table to full screen ----------
   const bookingsCard = document.getElementById('bookingsCard');
   const expandBookingsBtn = document.getElementById('expandBookingsBtn');
-  if (bookingsCard && expandBookingsBtn) {
+  const cardHeader = bookingsCard ? bookingsCard.querySelector('.card-header') : null;
+  const pageToolbar = document.querySelector('.page-toolbar');
+  const importNoteEl = document.getElementById('importNote');
+  if (bookingsCard && expandBookingsBtn && cardHeader) {
     const expandIcon = expandBookingsBtn.querySelector('.expand-icon');
     const shrinkIcon = expandBookingsBtn.querySelector('.shrink-icon');
+    const mainEl = bookingsCard.parentElement;
 
     function setMaximized(on) {
       bookingsCard.classList.toggle('is-maximized', on);
@@ -374,6 +378,18 @@
       const label = on ? 'Shrink back down' : 'Expand to full screen';
       expandBookingsBtn.title = label;
       expandBookingsBtn.setAttribute('aria-label', label);
+
+      // Sort, month picker, import, and + Add booking live above the card
+      // normally — while maximized there's nothing above it to reach them
+      // on, so they move inside the card itself (right under its header)
+      // and move back out to their normal spot on shrink.
+      if (on) {
+        if (pageToolbar) cardHeader.insertAdjacentElement('afterend', pageToolbar);
+        if (importNoteEl) (pageToolbar || cardHeader).insertAdjacentElement('afterend', importNoteEl);
+      } else if (mainEl) {
+        if (pageToolbar) mainEl.insertBefore(pageToolbar, bookingsCard);
+        if (importNoteEl) mainEl.insertBefore(importNoteEl, bookingsCard);
+      }
     }
 
     expandBookingsBtn.addEventListener('click', () => {
