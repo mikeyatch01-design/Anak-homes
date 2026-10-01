@@ -42,19 +42,22 @@
   --fs-3xl: 28px;
 }
 
-/* "Celestial black" — a deep blue-black rather than a neutral charcoal,
-   so dark mode reads as blue-and-black rather than just blue-on-gray. */
+/* "Celestial black" — the surfaces themselves stay genuinely black (barely
+   any color cast at all, like the void of space), and blue lives only in
+   the accent layer (buttons, active states, borders, glow) rather than
+   tinting the background/card itself, which was reading as dark navy
+   instead of black. */
 body.dark-theme {
-  --bg: #06080F;
-  --card: #0D1220;
+  --bg: #030304;
+  --card: #0A0A0D;
   --text: #F3F4F6;
-  --text-muted: #8993AB;
-  --border: #1B2234;
+  --text-muted: #8A8D99;
+  --border: #19191F;
   --blue-light: rgba(79, 129, 175, .18);
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
-  --glass: rgba(13, 18, 32, .62);
-  --glass-border: rgba(150, 190, 230, .1);
-  --glass-shadow: 0 16px 40px -12px rgba(0, 0, 0, .6);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  --glass: rgba(10, 10, 13, .62);
+  --glass-border: rgba(130, 170, 220, .12);
+  --glass-shadow: 0 16px 40px -12px rgba(0, 0, 0, .7);
 }
 
 * { box-sizing: border-box; }
