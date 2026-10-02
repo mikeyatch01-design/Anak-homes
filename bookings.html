@@ -102,31 +102,6 @@
   <a href="settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Settings</span></a>
 </nav>
 
-<!-- Trash (floating button, bottom-right — like the macOS Dock trash) -->
-<button type="button" class="trash-fab" id="trashFabBtn" title="Trash" aria-label="Open trash">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6M14 11v6"/></svg>
-  <span class="trash-fab-count" id="trashFabCount" hidden>0</span>
-</button>
-
-<!-- Trash modal -->
-<div class="modal-overlay" id="trashModalOverlay">
-  <div class="modal-card modal-card-wide">
-    <div class="modal-header">
-      <h2>Trash</h2>
-      <button type="button" class="modal-close" id="trashModalClose" aria-label="Close">&times;</button>
-    </div>
-    <p class="form-hint">Deleted bookings stay here for 30 days and can be restored, then are removed automatically.</p>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Guest</th><th>Check-in</th><th>Auto-delete in</th><th></th></tr>
-        </thead>
-        <tbody id="trashTableBody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
 <!-- Add / Edit booking modal -->
 <div class="modal-overlay" id="bookingModalOverlay">
   <div class="modal-card modal-card-wide">
@@ -150,13 +125,8 @@
       </div>
       <div class="form-row">
         <label>Apartment
-          <input type="text" id="fApartment" list="apartmentSuggestions" placeholder="e.g. Masaki, Mikocheni 4, 108" required>
-          <datalist id="apartmentSuggestions">
-            <option value="Mikocheni">
-            <option value="Masaki">
-            <option value="Sinza">
-            <option value="Mwenge">
-          </datalist>
+          <input type="text" id="fApartment" list="apartmentSuggestions" autocomplete="off" placeholder="e.g. Masaki, Mikocheni 4, 108" required>
+          <datalist id="apartmentSuggestions"></datalist>
         </label>
       </div>
       <div class="form-row two-col">
@@ -214,6 +184,6 @@
 <script src="auth.js?v=2"></script>
 <script src="shell.js?v=1"></script>
 <script src="monthpicker.js?v=1"></script>
-<script src="bookings.js?v=11"></script>
+<script src="bookings.js?v=12"></script>
 </body>
 </html>

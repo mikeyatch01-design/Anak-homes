@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=6">
+<link rel="stylesheet" href="app.css?v=7">
 </head>
 <body>
 
@@ -97,6 +97,23 @@
         <div class="settings-note" id="dataNote"></div>
       </div>
 
+      <!-- Trash -->
+      <div class="card settings-card settings-card-wide">
+        <div class="settings-card-header">
+          <h2 class="settings-card-title">Trash</h2>
+          <span class="trash-count" id="trashCount"></span>
+        </div>
+        <p class="settings-card-desc">Bookings you delete on the Bookings page wait here for 30 days. Restore one to put it back, or delete it forever.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Guest</th><th>Apartment</th><th>Check-in</th><th>Auto-delete in</th><th></th></tr>
+            </thead>
+            <tbody id="trashTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Start fresh -->
       <div class="card settings-card settings-card-wide">
         <h2 class="settings-card-title">Start fresh</h2>
@@ -133,6 +150,6 @@
 <script src="data.js?v=4"></script>
 <script src="auth.js?v=2"></script>
 <script src="shell.js?v=1"></script>
-<script src="settings.js?v=4"></script>
+<script src="settings.js?v=5"></script>
 </body>
 </html>

@@ -295,7 +295,41 @@
     fId.value = nextIdFor(key);
   });
 
+  // ---------- Apartment suggestions (remembers what's been typed) ----------
+  // Like Excel's autocomplete: every apartment name ever entered — from
+  // saved bookings, the Trash, and a per-device list of names typed here —
+  // is offered as you type (e.g. "M" → Masaki, Mikocheni 4, MPV 05).
+  const APARTMENTS_KEY = 'anak-apartments';
+  const apartmentList = document.getElementById('apartmentSuggestions');
+
+  function rememberedApartments() {
+    try { return JSON.parse(localStorage.getItem(APARTMENTS_KEY)) || []; } catch (e) { return []; }
+  }
+  function rememberApartment(name) {
+    const clean = (name || '').trim();
+    if (!clean) return;
+    const list = rememberedApartments().filter(a => a.toLowerCase() !== clean.toLowerCase());
+    list.unshift(clean);
+    try { localStorage.setItem(APARTMENTS_KEY, JSON.stringify(list.slice(0, 300))); } catch (e) {}
+  }
+  function refreshApartmentSuggestions() {
+    if (!apartmentList) return;
+    const seen = new Map();
+    const add = (name) => {
+      const clean = (name || '').trim();
+      if (clean && !seen.has(clean.toLowerCase())) seen.set(clean.toLowerCase(), clean);
+    };
+    rememberedApartments().forEach(add);
+    allBookings(liveBookings).forEach(b => add(b.apartment));
+    loadTrashedBookings().forEach(b => add(b.apartment));
+    ['Mikocheni', 'Masaki', 'Sinza', 'Mwenge'].forEach(add);
+    apartmentList.innerHTML = [...seen.values()]
+      .sort((x, y) => x.localeCompare(y, undefined, { sensitivity: 'base' }))
+      .map(name => `<option value="${escapeHtml(name)}">`).join('');
+  }
+
   function openModal(booking) {
+    refreshApartmentSuggestions();
     editingId = booking ? booking.id : null;
     editingMonth = booking ? bookingMonthKey(booking) : null;
     editingDbId = booking ? booking._dbId : null;
@@ -459,113 +493,17 @@
       if (deleteBtn) {
         const booking = monthBookings(currentMonth).find(b => b.id === deleteBtn.dataset.id);
         if (!booking) return;
-        if (!confirm(`Move booking ${booking.id} (${booking.guest}) to Trash?\n\nYou'll be able to restore it from the Trash for 30 days.`)) return;
+        if (!confirm(`Move booking ${booking.id} (${booking.guest}) to Trash?\n\nYou can restore it from Settings → Trash for 30 days.`)) return;
 
         deleteBtn.disabled = true;
         try {
           await trashBookingRemote(booking._dbId);
           liveBookings[currentMonth] = (liveBookings[currentMonth] || []).filter(b => b.id !== booking.id);
           renderBookings();
-          renderTrashFabCount();
         } catch (err) {
           console.error('trashBookingRemote failed:', err);
           alert('Could not delete this booking:\n\n' + (err && err.message ? err.message : err));
           deleteBtn.disabled = false;
-        }
-      }
-    });
-  }
-
-  // ---------- Trash ----------
-  const trashFabBtn = document.getElementById('trashFabBtn');
-  const trashFabCount = document.getElementById('trashFabCount');
-  const trashModalOverlay = document.getElementById('trashModalOverlay');
-  const trashModalClose = document.getElementById('trashModalClose');
-  const trashTableBody = document.getElementById('trashTableBody');
-
-  function renderTrashFabCount() {
-    if (!trashFabCount) return;
-    const n = loadTrashedBookings().length;
-    trashFabCount.textContent = n;
-    trashFabCount.hidden = n === 0;
-  }
-
-  function renderTrash() {
-    if (!trashTableBody) return;
-    const trashed = loadTrashedBookings();
-
-    if (!trashed.length) {
-      trashTableBody.innerHTML = `<tr><td colspan="5" class="checkin-empty">Trash is empty.</td></tr>`;
-      return;
-    }
-
-    trashTableBody.innerHTML = trashed.map(b => `
-      <tr>
-        <td>${escapeHtml(b.id)}</td>
-        <td><span class="mini-avatar">${escapeHtml(initials(b.guest))}</span>${escapeHtml(b.guest)}</td>
-        <td>${formatDisplayDate(b.checkin)}</td>
-        <td>${trashDaysLeft(b.deletedAt)} day${trashDaysLeft(b.deletedAt) === 1 ? '' : 's'}</td>
-        <td class="row-actions">
-          <button type="button" class="btn-secondary trash-restore-btn" data-dbid="${escapeHtml(b._dbId)}">Restore</button>
-          <button type="button" class="row-delete-btn trash-forever-btn" data-dbid="${escapeHtml(b._dbId)}" title="Delete forever" aria-label="Delete forever">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6M14 11v6"/></svg>
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  function openTrashModal() {
-    renderTrash();
-    if (trashModalOverlay) trashModalOverlay.classList.add('show');
-  }
-
-  function closeTrashModal() {
-    if (trashModalOverlay) trashModalOverlay.classList.remove('show');
-  }
-
-  if (trashFabBtn) trashFabBtn.addEventListener('click', openTrashModal);
-  if (trashModalClose) trashModalClose.addEventListener('click', closeTrashModal);
-  if (trashModalOverlay) {
-    trashModalOverlay.addEventListener('click', (e) => {
-      if (e.target === trashModalOverlay) closeTrashModal();
-    });
-  }
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && trashModalOverlay && trashModalOverlay.classList.contains('show')) closeTrashModal();
-  });
-
-  if (trashTableBody) {
-    trashTableBody.addEventListener('click', async (e) => {
-      const restoreBtn = e.target.closest('.trash-restore-btn');
-      if (restoreBtn) {
-        restoreBtn.disabled = true;
-        try {
-          const booking = await restoreBookingRemote(restoreBtn.dataset.dbid);
-          const month = bookingMonthKey(booking) || booking._monthKey;
-          if (month === currentMonth) renderBookings();
-          renderTrashFabCount();
-          renderTrash();
-        } catch (err) {
-          console.error('restoreBookingRemote failed:', err);
-          alert('Could not restore this booking:\n\n' + (err && err.message ? err.message : err));
-          restoreBtn.disabled = false;
-        }
-        return;
-      }
-
-      const foreverBtn = e.target.closest('.trash-forever-btn');
-      if (foreverBtn) {
-        if (!confirm('Permanently delete this booking? This cannot be undone.')) return;
-        foreverBtn.disabled = true;
-        try {
-          await deleteBookingForeverRemote(foreverBtn.dataset.dbid);
-          renderTrashFabCount();
-          renderTrash();
-        } catch (err) {
-          console.error('deleteBookingForeverRemote failed:', err);
-          alert('Could not delete this booking:\n\n' + (err && err.message ? err.message : err));
-          foreverBtn.disabled = false;
         }
       }
     });
@@ -599,6 +537,7 @@
       if (modalSubmitBtn) modalSubmitBtn.disabled = true;
       try {
         const saved = await upsertBooking(fields, targetMonth);
+        rememberApartment(fields.apartment);
 
         if (editingId != null && editingMonth) {
           liveBookings[editingMonth] = (liveBookings[editingMonth] || []).filter(b => b.id !== editingId);
@@ -621,6 +560,5 @@
   }
 
   renderBookings();
-  renderTrashFabCount();
   scheduleDailyRefresh();
 })();

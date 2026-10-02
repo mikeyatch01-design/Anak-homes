@@ -5,7 +5,8 @@
 // Definitions used throughout (Mike is the middleman — the commission
 // on each booking is his income, not the host's):
 //   Net Income       = commission earned this month
-//   Current Balance  = cumulative commission across every recorded month
+//   Current Balance  = money actually in the account: everything guests have
+//                      paid, minus what's already been paid out to hosts
 //   Total Received   = commission + host payouts, across every month
 //   Upcoming         = commission on bookings the guest hasn't fully paid
 //   Paid bookings    = guest paid the full amount (remaining === 0)
@@ -253,11 +254,14 @@ function renderIncomeCard() {
   const prevIncome = monthCommission(PREVIOUS_MONTH);
   const deltaPct = pctDelta(netIncome, prevIncome);
 
-  // Current balance = cumulative commission up to the viewed month; its
-  // change is the balance's own growth (new total vs. prior total).
-  const balance = monthsUpToCurrent().reduce((s, m) => s + monthCommission(m), 0);
+  // Current balance = the money actually in the account, as of the viewed
+  // month: everything guests have paid in, minus every payout already made
+  // to hosts. Paying a host lowers it; commission alone is Net income.
+  const cashIn = (m) => sumField(monthRows(m), 'amountPaid') - monthHostPaid(m);
+  const balance = monthsUpToCurrent().reduce((s, m) => s + cashIn(m), 0);
+  const balanceBefore = CURRENT_MONTH === ALL ? null : balance - cashIn(CURRENT_MONTH);
   el('currentBalanceValue').textContent = formatTZS(balance);
-  setDelta(el('currentBalanceDelta'), pctDelta(balance, balance - netIncome));
+  setDelta(el('currentBalanceDelta'), balanceBefore == null ? null : pctDelta(balance, balanceBefore));
 
   el('thisMonthLabel').textContent = CURRENT_MONTH === ALL ? 'All months'
     : CURRENT_MONTH ? MONTHS_FULL[Number(CURRENT_MONTH.slice(5)) - 1] : 'This month';

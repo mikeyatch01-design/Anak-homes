@@ -282,6 +282,69 @@
     });
   }
 
+  // ===== Trash (bookings deleted on the Bookings page) =====
+  const trashTableBody = document.getElementById('trashTableBody');
+  const trashCount = document.getElementById('trashCount');
+  const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>';
+
+  function renderTrash() {
+    if (!trashTableBody) return;
+    const trashed = loadTrashedBookings();
+    if (trashCount) trashCount.textContent = trashed.length ? `${trashed.length} booking${trashed.length === 1 ? '' : 's'}` : '';
+    if (!trashed.length) {
+      trashTableBody.innerHTML = '<tr><td colspan="6" class="checkin-empty">Trash is empty.</td></tr>';
+      return;
+    }
+    trashTableBody.innerHTML = trashed.map(b => {
+      const days = trashDaysLeft(b.deletedAt);
+      return `
+      <tr>
+        <td>${escapeHtml(b.id)}</td>
+        <td><span class="mini-avatar">${escapeHtml(initials(b.guest))}</span>${escapeHtml(b.guest)}</td>
+        <td>${escapeHtml(b.apartment) || '—'}</td>
+        <td>${formatDisplayDate(b.checkin)}</td>
+        <td>${days} day${days === 1 ? '' : 's'}</td>
+        <td class="row-actions">
+          <button type="button" class="btn-secondary trash-restore-btn" data-dbid="${escapeHtml(b._dbId)}">Restore</button>
+          <button type="button" class="row-delete-btn trash-forever-btn" data-dbid="${escapeHtml(b._dbId)}" title="Delete forever" aria-label="Delete ${escapeHtml(b.guest)} forever">${TRASH_ICON}</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  if (trashTableBody) {
+    trashTableBody.addEventListener('click', async (e) => {
+      const restoreBtn = e.target.closest('.trash-restore-btn');
+      if (restoreBtn) {
+        restoreBtn.disabled = true;
+        try {
+          await restoreBookingRemote(restoreBtn.dataset.dbid);
+          renderTrash();
+          if (typeof refreshFreshCount === 'function') refreshFreshCount();
+        } catch (err) {
+          console.error('restoreBookingRemote failed:', err);
+          alert('Could not restore this booking:\n\n' + (err && err.message ? err.message : err));
+          restoreBtn.disabled = false;
+        }
+        return;
+      }
+      const foreverBtn = e.target.closest('.trash-forever-btn');
+      if (foreverBtn) {
+        if (!confirm('Permanently delete this booking? This cannot be undone.')) return;
+        foreverBtn.disabled = true;
+        try {
+          await deleteBookingForeverRemote(foreverBtn.dataset.dbid);
+          renderTrash();
+        } catch (err) {
+          console.error('deleteBookingForeverRemote failed:', err);
+          alert('Could not delete this booking:\n\n' + (err && err.message ? err.message : err));
+          foreverBtn.disabled = false;
+        }
+      }
+    });
+    renderTrash();
+  }
+
   // ===== Start fresh: permanently delete every booking before a chosen month =====
   // Bookings are filed by check-in month, so "before October" means every
   // booking whose check-in month is earlier than October. A backup file
