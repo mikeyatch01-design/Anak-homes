@@ -281,4 +281,73 @@
       }
     });
   }
+
+  // ===== Start fresh: permanently delete every booking before a chosen month =====
+  // Bookings are filed by check-in month, so "before October" means every
+  // booking whose check-in month is earlier than October. A backup file
+  // downloads first — the deletion itself skips the Trash and can't be undone.
+  const freshCutoff = document.getElementById('freshCutoff');
+  const freshBtn = document.getElementById('freshBtn');
+  const freshCount = document.getElementById('freshCount');
+  const freshNote = document.getElementById('freshNote');
+
+  function bookingsBefore(cutoff) {
+    return Object.keys(loadBookings())
+      .filter(k => k < cutoff)
+      .flatMap(k => loadBookings()[k]);
+  }
+
+  function refreshFreshCount() {
+    if (!freshCutoff) return;
+    const rows = bookingsBefore(freshCutoff.value);
+    const months = [...new Set(Object.keys(loadBookings()).filter(k => k < freshCutoff.value && loadBookings()[k].length))].sort();
+    freshCount.textContent = rows.length
+      ? `This will permanently delete ${rows.length} booking${rows.length === 1 ? '' : 's'} (${monthLabel(months[0])} – ${monthLabel(months[months.length - 1])}).`
+      : 'There are no bookings before that month.';
+    freshBtn.disabled = !rows.length;
+  }
+
+  if (freshCutoff && freshBtn) {
+    const keys = Object.keys(loadBookings()).sort();
+    const last = [keys[keys.length - 1] || todayMonthKey(), todayMonthKey()].sort()[1];
+    const options = [];
+    for (let y = Number(last.slice(0, 4)), m = Number(last.slice(5)); options.length < 24; m--) {
+      if (m < 1) { m = 12; y--; }
+      const k = `${y}-${String(m).padStart(2, '0')}`;
+      options.push(`<option value="${k}">${monthLabel(k)}</option>`);
+    }
+    freshCutoff.innerHTML = options.join('');
+    freshCutoff.value = todayMonthKey();
+    freshCutoff.addEventListener('change', refreshFreshCount);
+    refreshFreshCount();
+
+    freshBtn.addEventListener('click', async () => {
+      const rows = bookingsBefore(freshCutoff.value);
+      if (!rows.length) return;
+      const ok = confirm(`Permanently delete ${rows.length} booking${rows.length === 1 ? '' : 's'} that check in before ${monthLabel(freshCutoff.value)}?\n\nA backup file downloads first. They will NOT go to the Trash and this cannot be undone.`);
+      if (!ok) return;
+
+      if (exportDataBtn) exportDataBtn.click(); // backup first
+      freshBtn.disabled = true;
+      freshCutoff.disabled = true;
+      let done = 0, failed = 0;
+      for (const b of rows) {
+        try {
+          await deleteBookingForeverRemote(b._dbId);
+          done++;
+        } catch (err) {
+          console.error('trash failed for', b.id, err);
+          failed++;
+        }
+        freshNote.className = 'settings-note';
+        freshNote.textContent = `Deleting… ${done + failed} of ${rows.length}`;
+      }
+      freshNote.className = 'settings-note' + (failed ? ' error' : '');
+      freshNote.textContent = failed
+        ? `Deleted ${done}, but ${failed} could not be deleted — check your connection and press the button again.`
+        : `Done — ${done} booking${done === 1 ? '' : 's'} permanently deleted. Reloading…`;
+      if (!failed) setTimeout(() => location.reload(), 1500);
+      else { freshBtn.disabled = false; freshCutoff.disabled = false; }
+    });
+  }
 })();

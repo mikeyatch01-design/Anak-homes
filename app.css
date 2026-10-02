@@ -358,6 +358,8 @@ body.has-maximized-card{overflow:hidden}
 .security-status.on{color:var(--up);background:rgba(127,199,154,.13)}
 .security-error{min-height:18px;font-size:13px;color:var(--down)}
 .export-month-select{width:auto;min-width:180px}
+.fresh-label{font-size:14px;color:var(--ink-2)}
+#freshCount{margin-top:12px;color:var(--ink-2)}
 
 /* ---------- Responsive ---------- */
 @media (max-width:1180px){

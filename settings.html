@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=5">
+<link rel="stylesheet" href="app.css?v=6">
 </head>
 <body>
 
@@ -97,6 +97,24 @@
         <div class="settings-note" id="dataNote"></div>
       </div>
 
+      <!-- Start fresh -->
+      <div class="card settings-card settings-card-wide">
+        <h2 class="settings-card-title">Start fresh</h2>
+        <p class="settings-card-desc">
+          Clear out old bookings so you can start working from a clean month. A backup file
+          downloads first, then every booking that checks in before the month you pick is
+          deleted permanently — it does not go to the Trash and cannot be undone here. Keep the
+          backup file somewhere safe; it's the only copy of those bookings afterwards.
+        </p>
+        <div class="form-actions-inline">
+          <label class="fresh-label" for="freshCutoff">Delete bookings before</label>
+          <select class="export-month-select" id="freshCutoff" aria-label="Delete bookings that check in before this month"></select>
+          <button type="button" class="btn-secondary btn-danger" id="freshBtn">Back up &amp; delete permanently</button>
+        </div>
+        <p class="settings-card-desc" id="freshCount"></p>
+        <div class="settings-note" id="freshNote"></div>
+      </div>
+
     </div>
 
 </main>
@@ -115,6 +133,6 @@
 <script src="data.js?v=4"></script>
 <script src="auth.js?v=2"></script>
 <script src="shell.js?v=1"></script>
-<script src="settings.js?v=3"></script>
+<script src="settings.js?v=4"></script>
 </body>
 </html>
