@@ -84,7 +84,7 @@
         <td>${formatTZS(b.commission)}</td>
         <td>${formatTZS(b.amountPaid)}</td>
         <td class="${b.remaining > 0 ? 'amount-owed' : ''}">${formatTZS(b.remaining)}</td>
-        <td>${escapeHtml(b.hostPaid)}</td>
+        <td>${escapeHtml(formatHostPaid(b.hostPaid))}</td>
         <td>${statusPill(computeBookingStatus(b, today))}</td>
         <td class="row-actions">
           <button type="button" class="row-edit-btn" data-id="${escapeHtml(b.id)}" title="Edit booking" aria-label="Edit booking">
@@ -265,6 +265,17 @@
       return Number.isNaN(n) ? m : Math.max(m, n);
     }, 0);
     return 'B' + String(maxNum + 1).padStart(3, '0');
+  }
+
+  // Host paid is free text so split payments can be typed as
+  // "225000+185000" — show each amount with commas like the other money
+  // columns ("TZS 225,000 + 185,000"), but leave anything else as typed.
+  function formatHostPaid(raw) {
+    const text = String(raw || '').trim();
+    if (!text) return '';
+    const parts = text.split('+').map(p => p.trim());
+    if (!parts.every(p => /^[\d,\s]*\d[\d,\s]*$/.test(p))) return text;
+    return 'TZS ' + parts.map(p => Number(p.replace(/[,\s]/g, '')).toLocaleString('en-US')).join(' + ');
   }
 
   // Commission is always whatever's left after the host's share — not a
