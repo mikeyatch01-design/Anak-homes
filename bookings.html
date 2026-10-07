@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=9">
+<link rel="stylesheet" href="app.css?v=10">
 </head>
 <body>
 
@@ -48,8 +48,8 @@
     <div class="page-toolbar">
       <select class="sort-select" id="sortSelect" aria-label="Sort bookings by">
         <option value="checkin-asc">Sort: Check-in (upcoming first)</option>
-        <option value="added-desc">Sort: Date added (newest first)</option>
-        <option value="added-asc">Sort: Date added (oldest first)</option>
+        <option value="added-desc">Sort: Date booked (newest first)</option>
+        <option value="added-asc">Sort: Date booked (oldest first)</option>
         <option value="guest-az">Sort: Guest name (A–Z)</option>
         <option value="amount-desc">Sort: Amount (highest first)</option>
       </select>
@@ -66,6 +66,13 @@
     <div class="card" id="bookingsCard">
       <div class="card-header">
         <h2 id="tableMonthLabel">Bookings</h2>
+        <div class="filter-pills" id="statusFilters" role="group" aria-label="Show bookings">
+          <button type="button" class="filter-pill active" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="filter-pill" data-filter="ACTIVE" aria-pressed="false">Active</button>
+          <button type="button" class="filter-pill" data-filter="UPCOMING" aria-pressed="false">Upcoming</button>
+          <button type="button" class="filter-pill" data-filter="COMPLETED" aria-pressed="false">Completed</button>
+          <button type="button" class="filter-pill" data-filter="DIDN'T STAY" aria-pressed="false">Didn't show up</button>
+        </div>
         <button type="button" class="expand-toggle" id="expandBookingsBtn" title="Expand to full screen" aria-label="Expand to full screen">
           <svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>
@@ -139,26 +146,26 @@
       </div>
       <div class="form-row two-col">
         <label>Total price (TZS)
-          <input type="number" id="fTotal" min="0" step="1" required>
+          <input type="text" id="fTotal" inputmode="numeric" autocomplete="off" data-money required>
         </label>
         <label>Amount paid (TZS)
-          <input type="number" id="fAmountPaid" min="0" step="1" required>
+          <input type="text" id="fAmountPaid" inputmode="numeric" autocomplete="off" data-money required>
         </label>
       </div>
       <div class="form-row two-col">
         <label>Host share (TZS)
-          <input type="number" id="fHostShare" min="0" step="1">
+          <input type="text" id="fHostShare" inputmode="numeric" autocomplete="off" data-money>
         </label>
         <label>Commission (TZS)
-          <input type="number" id="fCommission" min="0" step="1">
+          <input type="text" id="fCommission" inputmode="numeric" autocomplete="off" data-money>
         </label>
       </div>
       <div class="form-row two-col">
         <label>Remaining (TZS)
-          <input type="number" id="fRemaining" min="0" step="1">
+          <input type="text" id="fRemaining" inputmode="numeric" autocomplete="off" data-money>
         </label>
         <label>Host paid (TZS)
-          <input type="text" id="fHostPaid" placeholder="e.g. 225000 or 225,000+185,000">
+          <input type="text" id="fHostPaid" autocomplete="off" data-money data-money-plus placeholder="e.g. 225,000 or 225,000+185,000">
         </label>
       </div>
       <div class="form-row">
@@ -184,6 +191,6 @@
 <script src="auth.js?v=2"></script>
 <script src="shell.js?v=1"></script>
 <script src="monthpicker.js?v=1"></script>
-<script src="bookings.js?v=13"></script>
+<script src="bookings.js?v=14"></script>
 </body>
 </html>

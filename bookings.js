@@ -51,6 +51,27 @@
     });
   }
 
+  // ---------- Status filter (All / Active / Upcoming / ...) ----------
+  // Narrows the month's table (and its totals) to one status — e.g. just
+  // the guests staying right now.
+  let statusFilter = 'all';
+  const statusFilters = document.getElementById('statusFilters');
+  const FILTER_LABELS = { ACTIVE: 'active', UPCOMING: 'upcoming', COMPLETED: 'completed', "DIDN'T STAY": "didn't-show-up" };
+
+  if (statusFilters) {
+    statusFilters.addEventListener('click', (e) => {
+      const pill = e.target.closest('.filter-pill');
+      if (!pill) return;
+      statusFilter = pill.dataset.filter;
+      statusFilters.querySelectorAll('.filter-pill').forEach(p => {
+        const on = p === pill;
+        p.classList.toggle('active', on);
+        p.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      renderBookings();
+    });
+  }
+
   let lastRenderDate = null;
 
   function renderBookings() {
@@ -59,14 +80,15 @@
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const rows = sortedRows(monthBookings(currentMonth));
+    const rows = sortedRows(monthBookings(currentMonth))
+      .filter(b => statusFilter === 'all' || computeBookingStatus(b, today) === statusFilter);
 
     if (tableMonthLabel) tableMonthLabel.textContent = `${monthLabel(currentMonth)} bookings`;
     renderMonthPickerButton();
     renderMonthPickerMenu();
 
     if (!rows.length) {
-      tableBody.innerHTML = `<tr><td colspan="14" class="checkin-empty">No bookings for ${monthLabel(currentMonth)} yet.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="14" class="checkin-empty">${statusFilter === 'all' ? `No bookings for ${monthLabel(currentMonth)} yet.` : `No ${FILTER_LABELS[statusFilter].replace(/-/g, ' ')} bookings in ${monthLabel(currentMonth)}.`}</td></tr>`;
       renderTotalsPanel(rows);
       return;
     }
@@ -136,7 +158,7 @@
 
     panel.innerHTML = `
       <div class="totals-panel-header">
-        <span class="totals-panel-title">Totals — ${monthLabel(currentMonth)}</span>
+        <span class="totals-panel-title">Totals — ${statusFilter === 'all' ? '' : FILTER_LABELS[statusFilter].replace(/-/g, ' ').replace(/^./, c => c.toUpperCase()) + ', '}${monthLabel(currentMonth)}</span>
         <span class="totals-panel-sub">${rows.length} booking${rows.length === 1 ? '' : 's'}${owedCount ? ` · ${owedCount} not fully paid` : ''}</span>
       </div>
       <div class="totals-grid">
@@ -278,19 +300,53 @@
     return 'TZS ' + parts.map(p => Number(p.replace(/[,\s]/g, '')).toLocaleString('en-US')).join(' + ');
   }
 
+  // ---------- Money boxes show commas while you type ----------
+  // "250000" turns into "250,000" keystroke by keystroke so a missing or
+  // extra zero is easy to spot. The cursor stays after the same digit it
+  // was after. Host paid also allows "+" for split payments
+  // ("225,000+185,000") and is left alone if it holds other words.
+  function moneyValue(input) {
+    return Number(String(input.value).replace(/[^\d]/g, '')) || 0;
+  }
+  function setMoney(input, val) {
+    input.value = (val === '' || val === null || val === undefined) ? '' : Number(val).toLocaleString('en-US');
+  }
+  function formatMoneyInput(input) {
+    const allowPlus = input.hasAttribute('data-money-plus');
+    const raw = input.value;
+    if (allowPlus && /[^\d,+\s]/.test(raw)) return;
+    const keep = allowPlus ? /[\d+]/ : /\d/;
+    const caret = input.selectionStart === null ? raw.length : input.selectionStart;
+    const kept = (str) => str.split('').filter(ch => keep.test(ch)).length;
+    const before = kept(raw.slice(0, caret));
+    const groups = raw.split('').filter(ch => keep.test(ch)).join('').split('+');
+    const formatted = groups.map(g => {
+      const digits = g.replace(/^0+(?=\d)/, '');
+      return digits ? Number(digits).toLocaleString('en-US') : '';
+    }).join('+');
+    if (formatted === raw) return;
+    input.value = formatted;
+    let pos = 0, seen = 0;
+    while (pos < formatted.length && seen < before) { if (keep.test(formatted[pos])) seen++; pos++; }
+    if (document.activeElement === input) input.setSelectionRange(pos, pos);
+  }
+  document.querySelectorAll('input[data-money]').forEach(input => {
+    input.addEventListener('input', () => formatMoneyInput(input));
+  });
+
   // Commission is always whatever's left after the host's share — not a
   // fixed 10%, since the split isn't the same on every booking. Host
   // share is typed in by hand; commission just follows it.
   function applyCommission() {
-    const total = Number(fTotal.value) || 0;
-    const hostShare = Number(fHostShare.value) || 0;
-    fCommission.value = Math.max(total - hostShare, 0);
+    const total = moneyValue(fTotal);
+    const hostShare = moneyValue(fHostShare);
+    setMoney(fCommission, Math.max(total - hostShare, 0));
   }
 
   function applyRemaining() {
-    const total = Number(fTotal.value) || 0;
-    const paid = Number(fAmountPaid.value) || 0;
-    fRemaining.value = Math.max(total - paid, 0);
+    const total = moneyValue(fTotal);
+    const paid = moneyValue(fAmountPaid);
+    setMoney(fRemaining, Math.max(total - paid, 0));
   }
 
   fTotal.addEventListener('input', () => { applyCommission(); applyRemaining(); });
@@ -352,12 +408,13 @@
     fApartment.value = booking ? booking.apartment : '';
     fCheckin.value = booking ? booking.checkin : '';
     fCheckout.value = booking ? booking.checkout : '';
-    fTotal.value = booking ? booking.total : '';
-    fAmountPaid.value = booking ? booking.amountPaid : '';
-    fHostShare.value = booking ? booking.hostShare : '';
-    fCommission.value = booking ? booking.commission : '';
-    fRemaining.value = booking ? booking.remaining : '';
+    setMoney(fTotal, booking ? booking.total : '');
+    setMoney(fAmountPaid, booking ? booking.amountPaid : '');
+    setMoney(fHostShare, booking ? booking.hostShare : '');
+    setMoney(fCommission, booking ? booking.commission : '');
+    setMoney(fRemaining, booking ? booking.remaining : '');
     fHostPaid.value = booking ? booking.hostPaid : '';
+    formatMoneyInput(fHostPaid);
     fNoShow.checked = booking ? booking.status === "DIDN'T STAY" : false;
 
     modalOverlay.classList.add('show');
@@ -531,11 +588,11 @@
         apartment: fApartment.value.trim(),
         checkin: fCheckin.value,
         checkout: fCheckout.value,
-        total: Number(fTotal.value) || 0,
-        amountPaid: Number(fAmountPaid.value) || 0,
-        hostShare: Number(fHostShare.value) || 0,
-        commission: Number(fCommission.value) || 0,
-        remaining: Number(fRemaining.value) || 0,
+        total: moneyValue(fTotal),
+        amountPaid: moneyValue(fAmountPaid),
+        hostShare: moneyValue(fHostShare),
+        commission: moneyValue(fCommission),
+        remaining: moneyValue(fRemaining),
         hostPaid: fHostPaid.value.trim(),
         status: fNoShow.checked ? "DIDN'T STAY" : '',
       };
@@ -572,4 +629,12 @@
 
   renderBookings();
   scheduleDailyRefresh();
+
+  // The dashboard's "+" button links here with ?add=1 — open the form
+  // straight away, then drop the flag so a refresh doesn't reopen it.
+  const params = new URLSearchParams(location.search);
+  if (params.get('add') === '1') {
+    history.replaceState(null, '', location.pathname);
+    openModal(null);
+  }
 })();
