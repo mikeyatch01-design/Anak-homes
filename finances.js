@@ -242,11 +242,22 @@ function buildDaily() {
   const single = CURRENT_MONTH && CURRENT_MONTH !== ALL;
   const dailyBtn = document.querySelector('.seg-btn[data-mode="daily"]');
   dailyBtn.disabled = !single;
-  if (!single && incomeMode === 'daily') document.querySelector('.seg-btn[data-mode="monthly"]').click();
+  // Daily is the default for a single month; "All months" can only show Monthly.
+  if (!single) setIncomeMode('monthly');
+  else if (!modePicked) setIncomeMode('daily');
   const daily = single ? dailyCommission(CURRENT_MONTH) : [];
   incomeDaily = { labels: daily.map((_, i) => `${i + 1} ${CURRENT_LABEL}`), data: daily };
 }
-let incomeMode = 'monthly';
+let incomeMode = 'daily';
+let modePicked = false; // true once the user presses Monthly/Daily themselves
+function setIncomeMode(mode) {
+  incomeMode = mode;
+  document.querySelectorAll('.seg-btn').forEach(b => {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
 let incomePts = [];
 
 function renderIncomeCard() {
@@ -476,11 +487,8 @@ document.addEventListener('keydown', e => {
 document.querySelectorAll('.seg-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     if (btn.classList.contains('active')) return;
-    document.querySelectorAll('.seg-btn').forEach(b => {
-      b.classList.toggle('active', b === btn);
-      b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
-    });
-    incomeMode = btn.dataset.mode;
+    modePicked = true;
+    setIncomeMode(btn.dataset.mode);
     drawIncomeChart();
   });
 });
