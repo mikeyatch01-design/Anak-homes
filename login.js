@@ -13,39 +13,30 @@ function getNextPage() {
 const nextPage = getNextPage();
 
 // The background starts as a tiny inlined blurred placeholder (instant,
-// no request) and swaps to the real photo once it's actually downloaded —
-// avoids a blank/white flash while a ~580KB image is still loading.
+// no request) and swaps to the real photo once it's actually downloaded.
+// Phones get a smaller copy; bigger screens get the 4K one.
 (function loadBgPhoto() {
   const bgPhoto = document.getElementById('bgPhoto');
   if (!bgPhoto) return;
+  const big = window.matchMedia('(min-width: 900px)').matches;
+  const src = big ? 'assets/login-villa.jpg' : 'assets/login-villa-1800.jpg';
   const img = new Image();
-  img.onload = () => bgPhoto.classList.add('is-loaded');
-  img.src = 'assets/login-house.jpg';
+  img.onload = () => { bgPhoto.style.setProperty('--photo', `url("${src}")`); bgPhoto.classList.add('is-loaded'); };
+  img.src = src;
 })();
 
-// The photo above is the permanent fallback; this layers a looping video
-// on top once it's actually ready to play. Skipped entirely — never even
-// requested — for prefers-reduced-motion, a data-saver / 2G-class
-// connection, or a phone-width screen (the video played choppy on actual
-// phone hardware — tablets and desktops keep it, only narrow/phone
-// viewports fall back to the static photo).
-(function loadBgVideo() {
-  const bgVideo = document.getElementById('bgVideo');
-  if (!bgVideo) return;
-
-  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reducedMotion) return;
-
-  const isPhoneWidth = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
-  if (isPhoneWidth) return;
-
-  const conn = navigator.connection || navigator.webkitConnection || navigator.mozConnection;
-  if (conn && (conn.saveData || /^(slow-2g|2g)$/.test(conn.effectiveType || ''))) return;
-
-  bgVideo.addEventListener('playing', () => bgVideo.classList.add('is-playing'), { once: true });
-  bgVideo.src = 'assets/login-house.mp4';
-  bgVideo.preload = 'auto';
-  bgVideo.play().catch(() => {}); // autoplay can be blocked by the browser — the photo stays visible either way
+// Eye button: show or hide the password while typing it.
+(function passwordToggle() {
+  const btn = document.getElementById('pwToggle');
+  const input = document.getElementById('passwordInput');
+  if (!btn || !input) return;
+  btn.addEventListener('click', () => {
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    input.focus();
+  });
 })();
 
 (async function init() {

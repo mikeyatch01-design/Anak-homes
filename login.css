@@ -338,3 +338,165 @@ body {
     transform: none !important;
   }
 }
+
+/* ================================================================
+   Login page theme: villa photo + frosted "liquid glass" card
+   (login.html only — its <body class="villa">; reset-password keeps
+   the dark look above)
+   ================================================================ */
+.villa {
+  --ink: #15171c;
+  --ink-soft: #343842;
+  --glass: rgba(255, 255, 255, .34);
+  --glass-rim: rgba(255, 255, 255, .62);
+  background: #0d1a33;
+}
+
+.villa .bg-photo {
+  background-image: url("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QCARXhpZgAATU0AKgAAAAgABAEaAAUAAAABAAAAPgEbAAUAAAABAAAARgEoAAMAAAABAAIAAIdpAAQAAAABAAAATgAAAAAAAABIAAAAAQAAAEgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAAACigAwAEAAAAAQAAABYAAAAA/+0AOFBob3Rvc2hvcCAzLjAAOEJJTQQEAAAAAAAAOEJJTQQlAAAAAAAQ1B2M2Y8AsgTpgAmY7PhCfv/CABEIABYAKAMBIgACEQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAADAgQBBQAGBwgJCgv/xADDEAABAwMCBAMEBgQHBgQIBnMBAgADEQQSIQUxEyIQBkFRMhRhcSMHgSCRQhWhUjOxJGIwFsFy0UOSNIII4VNAJWMXNfCTc6JQRLKD8SZUNmSUdMJg0oSjGHDiJ0U3ZbNVdaSVw4Xy00Z2gONHVma0CQoZGigpKjg5OkhJSldYWVpnaGlqd3h5eoaHiImKkJaXmJmaoKWmp6ipqrC1tre4ubrAxMXGx8jJytDU1dbX2Nna4OTl5ufo6erz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAECAAMEBQYHCAkKC//EAMMRAAICAQMDAwIDBQIFAgQEhwEAAhEDEBIhBCAxQRMFMCIyURRABjMjYUIVcVI0gVAkkaFDsRYHYjVT8NElYMFE4XLxF4JjNnAmRVSSJ6LSCAkKGBkaKCkqNzg5OkZHSElKVVZXWFlaZGVmZ2hpanN0dXZ3eHl6gIOEhYaHiImKkJOUlZaXmJmaoKOkpaanqKmqsLKztLW2t7i5usDCw8TFxsfIycrQ09TV1tfY2drg4uPk5ebn6Onq8vP09fb3+Pn6/9sAQwAEBAQEBAQGBAQGCQYGBgkMCQkJCQwPDAwMDAwPEg8PDw8PDxISEhISEhISFRUVFRUVGRkZGRkcHBwcHBwcHBwc/9sAQwEEBQUHBwcMBwcMHRQQFB0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0d/9oADAMBAAIRAxEAAAHy4pvTPQ4fNA9u9LeeKZtteXouj5TufmPV6jgfRfL+xmwAT56f/9oACAEBAAEFAggB0YjWX7uU9oYlTyW8aYoLaq9wuYFlqNAleDs413ACBlcXE8cxnJH/2gAIAQMRAT8B/RTyGyUdGY/hknoz6FBSS2X/2gAIAQIRAT8Bj12PGNoDLrIz/FFHXj1DigJTAL1cIgAht//aAAgBAQAGPwLtoHWhHblJ9GiIgFTVbBR6Rk1x/wAl6Pp0aqqogcQzTQ04+bVGo1pp9jpQP//EADMQAQADAAICAgICAwEBAAACCwERACExQVFhcYGRobHB8NEQ4fEgMEBQYHCAkKCwwNDg/9oACAEBAAE/IdE/4UhX4rMZDWbix3Z7RAf0UYhOY9tJoCg6nlI+7I2Tz+6PJ+7KESO63TiA5Z2zkjcZ2909bG455FkeP4L/AP/aAAwDAQACEQMRAAAQ4M47or//xAAzEQEBAQADAAECBQUBAQABAQkBABEhMRBBUWEgcfCRgaGx0cHh8TBAUGBwgJCgsMDQ4P/aAAgBAxEBPxDU4/NvacxHIbc2zd33r//aAAgBAhEBPxA5geON/iD0OPrPNg6dhAx6hBg3/9oACAEBAAE/EHjZDn0lk9WQbTos0/XkDBDyzRaWR1WfJqkkQR+6qBuA4xL6yJq/Di8v0BwsXEm4kjv+rEnoZicPxWB8IOfzXXHSEqkTwEs/NKBuwNLFWuk7QTtRgYBHXU2QcSP/AGi//9k=");
+  background-position: center;
+  filter: none;
+}
+.villa .bg-photo.is-loaded { background-image: var(--photo); }
+
+/* Almost no darkening: the photo is the star. A soft shade bottom-left keeps the caption readable. */
+.villa .bg-overlay {
+  background:
+    radial-gradient(120% 90% at 0% 100%, rgba(6, 12, 28, .45) 0%, rgba(6, 12, 28, 0) 55%),
+    linear-gradient(180deg, rgba(6, 12, 28, .08), rgba(6, 12, 28, .18));
+}
+
+.villa .scene { justify-content: center; }
+
+/* ---------- The glass card ---------- */
+.villa .login-card {
+  max-width: 460px;
+  min-height: min(560px, calc(100vh - 64px));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 44px;
+  color: var(--ink);
+  border-radius: 34px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, .3) 42%, rgba(255, 255, 255, .36) 100%);
+  backdrop-filter: blur(30px) saturate(170%) brightness(1.08);
+  -webkit-backdrop-filter: blur(30px) saturate(170%) brightness(1.08);
+  border: 1px solid var(--glass-rim);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .85),      /* bright top edge, like iOS glass */
+    inset 0 -1px 0 rgba(255, 255, 255, .25),
+    inset 0 0 0 1px rgba(255, 255, 255, .12),
+    0 30px 80px rgba(4, 10, 24, .45),
+    0 2px 6px rgba(4, 10, 24, .12);
+}
+/* soft light catching the top-left corner of the glass */
+.villa .login-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(90% 60% at 0% 0%, rgba(255, 255, 255, .38), rgba(255, 255, 255, 0) 60%);
+}
+.villa .login-card > * { position: relative; }
+
+.villa .login-brand {
+  align-self: center;
+  gap: 8px;
+  margin-bottom: 26px;
+  padding: 9px 20px 9px 15px;
+  border-radius: 999px;
+  /* black and gold, like the dashboard */
+  background: linear-gradient(180deg, #1a1a1a, #050505);
+  border: 1px solid rgba(210, 160, 89, .55);
+  color: #E9C98F;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(243, 217, 164, .25), 0 6px 18px rgba(0, 0, 0, .3);
+}
+.villa .login-brand span {
+  background: linear-gradient(180deg, #F3D9A4, #C9954E);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.villa .login-brand svg { color: #D2A059; }
+
+.villa .login-card h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(30px, 3vw, 38px);
+  line-height: 1.15;
+  letter-spacing: -.01em;
+  text-align: center;
+  margin: 0 0 30px;
+  color: var(--ink);
+}
+.villa .login-sub { text-align: center; color: var(--ink-soft); font-size: 15px; margin-bottom: 30px; }
+
+.villa .field { margin-bottom: 14px; }
+.villa .field label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.villa .input-wrap {
+  background: rgba(255, 255, 255, .55);
+  border: 1px solid rgba(21, 23, 28, .55);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.villa .input-wrap svg { color: var(--ink-soft); }
+.villa .input-wrap:focus-within { border-color: #B9853F; box-shadow: 0 0 0 3px rgba(210, 160, 89, .25); background: rgba(255, 255, 255, .75); }
+.villa .input-wrap input { color: var(--ink); }
+.villa .input-wrap input::placeholder { color: #6b7180; }
+
+.villa .pw-toggle {
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  padding: 2px;
+  margin: -2px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  border-radius: 6px;
+}
+.villa .pw-toggle:hover, .villa .pw-toggle[aria-pressed="true"] { color: var(--ink); }
+.villa .pw-toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.villa .login-error { color: #c0262d; }
+
+.villa .login-submit {
+  background: linear-gradient(180deg, #1c1c1c, #040404);
+  color: #EBCB91;
+  border: 1px solid rgba(210, 160, 89, .6);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 15px;
+  letter-spacing: .01em;
+  box-shadow: inset 0 1px 0 rgba(243, 217, 164, .22), 0 10px 24px rgba(10, 12, 18, .3);
+}
+.villa .login-submit svg { color: #D2A059; }
+.villa .login-submit:hover {
+  border-color: rgba(233, 201, 143, .9);
+  box-shadow: inset 0 1px 0 rgba(243, 217, 164, .3), 0 14px 30px rgba(10, 12, 18, .35), 0 0 0 3px rgba(210, 160, 89, .18);
+}
+.villa .login-submit.success { background: linear-gradient(135deg, #22C55E, #16A34A); }
+
+.villa .login-forgot { color: var(--ink-soft); font-size: 14px; margin-top: 18px; }
+.villa .login-forgot:hover { color: var(--ink); }
+
+@media (max-width: 899px) {
+  .villa .login-card { min-height: 0; }
+  .villa .bg-photo { background-position: 42% center; }
+}
+@media (max-width: 460px) {
+  .villa .login-card { padding: 34px 22px; border-radius: 28px; }
+}
