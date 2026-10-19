@@ -522,6 +522,7 @@ const monthPicker = createMonthPicker(el('monthPicker'), {
     setMonth(key);
     try { localStorage.setItem(MONTH_KEY_STORE, CURRENT_MONTH); } catch (e) {}
     renderMonth();
+    playIntro();
   },
 });
 
@@ -537,6 +538,80 @@ function renderMonth() {
   renderHost();
   renderReport();
 }
+// ---------- Intro animation ----------
+// Every time the dashboard opens (including coming back with the browser's Back button),
+// the figures count up from 0, the income line draws itself and the gauge sweeps round.
+const COUNT_IDS = ['netIncomeValue', 'totalReceivedValue', 'upcomingStatValue', 'bookingsCountValue',
+  'currentBalanceValue', 'thisMonthIncome', 'paidAmount', 'paidCommissionValue',
+  'upcomingCommissionValue', 'paidToHostValue', 'unpaidToHostValue'];
+const COUNT_MS = 1800;
+const GRAPH_MS = 2800; // the line and the gauge move slower than the numbers
+const easeInOut = p => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+let countRun = 0;
+
+function countUp() {
+  const run = ++countRun;
+  const jobs = [];
+  COUNT_IDS.forEach(id => {
+    const node = el(id);
+    if (!node) return;
+    // The number is in the last text node (the "TZS" label sits in its own <span>).
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    let t, target = null;
+    while ((t = walker.nextNode())) if (/\d/.test(t.nodeValue)) target = t;
+    if (!target) return;
+    const m = target.nodeValue.match(/^(.*?)(-?[\d,]+(?:\.\d+)?)(.*)$/s);
+    if (!m) return;
+    const end = Number(m[2].replace(/,/g, ''));
+    const decimals = (m[2].split('.')[1] || '').length;
+    jobs.push({ text: target, before: m[1], after: m[3], end, decimals, final: target.nodeValue });
+  });
+  const show = (j, v) => {
+    j.text.nodeValue = j.before + v.toLocaleString('en-US', { minimumFractionDigits: j.decimals, maximumFractionDigits: j.decimals }) + j.after;
+  };
+  jobs.forEach(j => show(j, 0));
+  const start = performance.now();
+  function frame(now) {
+    if (run !== countRun) return; // a newer run took over (e.g. month switched mid-count)
+    const p = Math.min((now - start) / COUNT_MS, 1);
+    const eased = 1 - Math.pow(1 - p, 4); // quick start, long gentle landing
+    jobs.forEach(j => (p < 1 ? show(j, Math.round(j.end * eased * 10 ** j.decimals) / 10 ** j.decimals) : (j.text.nodeValue = j.final)));
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function playIntro() {
+  if (reduceMotion.matches) return;
+  countUp();
+  // gauge: sweeps from 0 to its value, with the % under it counting along
+  const fill = el('gaugeFill'), pct = el('paidPct');
+  const endP = Number(fill.style.getPropertyValue('--p')) || 0;
+  const finalPct = pct.textContent;
+  fill.style.transition = 'none';
+  fill.style.setProperty('--p', 0);
+  pct.textContent = '0%';
+  const start = performance.now(), run = countRun;
+  (function sweep(now) {
+    if (run !== countRun) return;
+    const p = Math.min((now - start) / GRAPH_MS, 1);
+    const v = endP * easeInOut(p);
+    fill.style.setProperty('--p', v.toFixed(2));
+    pct.textContent = p < 1 ? Math.round(v) + '%' : finalPct;
+    if (p < 1) requestAnimationFrame(sweep); else fill.style.transition = '';
+  })(start);
+  // income line draws from the left edge to the right edge, the gold area following it
+  const svg = el('incomeChart').querySelector('svg');
+  if (svg) {
+    svg.classList.remove('chart-draw'); void svg.getBoundingClientRect();
+    svg.style.setProperty('--draw-ms', GRAPH_MS + 'ms');
+    svg.classList.add('chart-draw');
+  }
+}
+
 renderMonth();
 renderBookingsFeed();
+playIntro();
+// Coming back with Back/Forward can restore the page from memory without re-running it.
+window.addEventListener('pageshow', e => { if (e.persisted) playIntro(); });
 })();
