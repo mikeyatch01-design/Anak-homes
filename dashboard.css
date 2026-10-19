@@ -429,5 +429,14 @@ em.flat{color:var(--ink-3);background:rgba(255,255,255,.06)}
   .tabbar-tucked .tabbar-fab{opacity:1;transform:none;pointer-events:auto;transition-delay:.08s}
   .tabbar-instant .tabbar,.tabbar-instant .tabbar-fab{transition:none!important}
   body:has(.modal-overlay.show) .tabbar-fab,body.has-maximized-card .tabbar-fab{display:none}
+  /* lower and slimmer (2026-10-19) */
+  .tabbar{left:22px;right:22px;bottom:max(6px,calc(env(safe-area-inset-bottom) - 14px));padding:4px;border-radius:24px;
+    grid-template-columns:repeat(4,1fr) 34px}
+  .tabbar a{min-height:42px;gap:2px;border-radius:19px;font-size:9.5px}
+  .tabbar a svg{width:19px;height:19px}
+  .tabbar-hide{width:28px;height:28px}
+  .tabbar-hide svg{width:15px;height:15px}
+  .tabbar-fab{width:44px;height:44px;right:14px;bottom:max(8px,calc(env(safe-area-inset-bottom) - 12px))}
+  .tabbar-fab svg{width:19px;height:19px}
 }
 @media (prefers-reduced-motion:reduce){.tabbar,.tabbar-fab{transition:none!important}}
