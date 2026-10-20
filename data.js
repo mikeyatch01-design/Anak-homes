@@ -239,10 +239,115 @@ function bookingToRow(b, month) {
   return row;
 }
 
-// Fetches everything fresh from Supabase into the in-memory cache. Every
-// protected page's bootstrap awaits this once, right after confirming a
-// session exists, before calling any render function.
+// ---------- Keeping data between pages ----------
+// Switching pages used to re-download every booking before anything showed.
+// Now the last data is kept for this browser tab only (sessionStorage — gone
+// when the tab closes, and cleared on sign out), so the next page draws
+// instantly; Supabase is then asked again in the background, and if anything
+// changed meanwhile (say, an edit from another device) the page reloads itself
+// with the fresh figures.
+const DATA_CACHE_KEY = 'anak-data-v1';
+const DATA_CACHE_MAX_AGE = 12 * 60 * 60 * 1000;
+let _cacheUserId = null;
+
+function saveDataCache() {
+  if (!_cacheUserId) return;
+  try {
+    sessionStorage.setItem(DATA_CACHE_KEY, JSON.stringify({
+      uid: _cacheUserId, at: Date.now(),
+      bookings: _bookingsData, trash: _trashedBookings, hosts: _customHosts, hidden: _hiddenHostKeys,
+    }));
+  } catch (e) { /* storage full or blocked: just skip caching */ }
+}
+function readDataCache(uid) {
+  try {
+    const c = JSON.parse(sessionStorage.getItem(DATA_CACHE_KEY) || 'null');
+    if (!c || c.uid !== uid || Date.now() - c.at > DATA_CACHE_MAX_AGE) return null;
+    return c;
+  } catch (e) { return null; }
+}
+function clearDataCache() {
+  _cacheUserId = null; // also stops the pagehide save from writing it back
+  try { sessionStorage.removeItem(DATA_CACHE_KEY); } catch (e) {}
+}
+// Pages edit the in-memory data directly, so save it whenever the page is left.
+window.addEventListener('pagehide', saveDataCache);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveDataCache(); });
+
+// One line per saved booking/host, so two copies of the data can be compared.
+function dataFingerprint(bookings, trash, hosts, hidden) {
+  const lines = [];
+  Object.keys(bookings).forEach(m => bookings[m].forEach(b => { if (b._dbId) lines.push(JSON.stringify([b._dbId, m, bookingToRow(b, m)])); }));
+  trash.forEach(b => lines.push(JSON.stringify(['t', b._dbId, b.deletedAt])));
+  hosts.forEach(h => lines.push(JSON.stringify(['h', h.key, h.name, h.icon, h.keywords])));
+  hidden.forEach(k => lines.push('x' + k));
+  return lines.sort().join('\n');
+}
+
+// Fills the in-memory data that every page reads. Shows saved data straight
+// away when this tab has some; otherwise waits for Supabase.
 async function initAppData() {
+  const { data: { session } } = await sb.auth.getSession();
+  _cacheUserId = session ? session.user.id : null;
+  const cached = _cacheUserId && readDataCache(_cacheUserId);
+  if (cached) {
+    _bookingsData = cached.bookings || {};
+    _trashedBookings = cached.trash || [];
+    _customHosts = cached.hosts || [];
+    _hiddenHostKeys = cached.hidden || [];
+    refreshInBackground();
+    return;
+  }
+  await fetchAppData();
+  saveDataCache();
+}
+
+async function refreshInBackground() {
+  const loadedAt = Date.now();
+  const before = dataFingerprint(_bookingsData, _trashedBookings, _customHosts, _hiddenHostKeys);
+  let fresh;
+  try { fresh = await fetchRows(); } catch (e) { return; } // offline: keep showing what we have
+  if (!fresh) return;
+  const next = buildAppData(fresh);
+  if (dataFingerprint(next.bookings, next.trash, next.hosts, next.hidden) === before) return;
+  // Something changed elsewhere. Save the fresh copy; reload now if the user
+  // hasn't started doing anything yet, otherwise the next page shows it.
+  _bookingsData = next.bookings; _trashedBookings = next.trash; _customHosts = next.hosts; _hiddenHostKeys = next.hidden;
+  saveDataCache();
+  const busy = document.querySelector('.modal-overlay.show, .host-popup.show, .card.is-maximized') ||
+    (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
+  if (!busy && Date.now() - loadedAt < 8000) location.reload();
+}
+
+async function fetchRows() {
+  const [bookingsRes, hostsRes, hiddenRes] = await Promise.all([
+    sb.from('bookings').select('*'),
+    sb.from('custom_hosts').select('*'),
+    sb.from('hidden_hosts').select('key'),
+  ]);
+  if (bookingsRes.error || hostsRes.error || hiddenRes.error) return null;
+  return { bookingsRes, hostsRes, hiddenRes };
+}
+
+function buildAppData({ bookingsRes, hostsRes, hiddenRes }) {
+  const bookings = {}, trash = [];
+  (bookingsRes.data || []).forEach(row => {
+    const b = rowToBooking(row);
+    if (row.deleted_at) trash.push(b);
+    else (bookings[row.month_key] = bookings[row.month_key] || []).push(b);
+  });
+  Object.keys(bookings).forEach(m => bookings[m].sort((a, b) => (a.checkin || '').localeCompare(b.checkin || '')));
+  trash.sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''));
+  return {
+    bookings, trash,
+    hosts: (hostsRes.data || []).map(r => ({ key: r.key, name: r.name, icon: r.icon, keywords: r.keywords || [] })),
+    hidden: (hiddenRes.data || []).map(r => r.key),
+  };
+}
+
+// Fetches everything fresh from Supabase into the in-memory data (first page
+// of a tab, or after "Start fresh" / restoring a backup).
+async function fetchAppData() {
   const [bookingsRes, hostsRes, hiddenRes] = await Promise.all([
     sb.from('bookings').select('*'),
     sb.from('custom_hosts').select('*'),
@@ -267,26 +372,33 @@ async function initAppData() {
   _customHosts = (hostsRes.data || []).map(r => ({ key: r.key, name: r.name, icon: r.icon, keywords: r.keywords || [] }));
   _hiddenHostKeys = (hiddenRes.data || []).map(r => r.key);
 
-  purgeExpiredTrash();
+  // Trashed bookings are kept until deleted by hand (no automatic clean-up).
 }
 
 function loadBookings() { return _bookingsData; }
+
+// ---------- "Start fresh" (dashboard only) ----------
+// The dashboard can start from a chosen month: older bookings are left out of
+// its figures but stay saved and visible everywhere else. The month is kept on
+// the signed-in account (Supabase user metadata) so phone and laptop agree.
+function dashboardStartMonth(session) {
+  const v = session && session.user && session.user.user_metadata && session.user.user_metadata.dashboard_from;
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(v || '') ? v : null;
+}
+async function setDashboardStartMonth(month) {
+  const { error } = await sb.auth.updateUser({ data: { dashboard_from: month || null } });
+  if (error) throw error;
+}
+// The bookings the dashboard counts: every month from `from` onwards.
+function dashboardBookings(data, from) {
+  if (!from) return data;
+  const out = {};
+  Object.keys(data).forEach(k => { if (k >= from) out[k] = data[k]; });
+  return out;
+}
 function loadTrashedBookings() { return _trashedBookings; }
 function loadCustomHosts() { return _customHosts; }
 function loadHiddenHostKeys() { return _hiddenHostKeys; }
-
-// Fire-and-forget: permanently removes anything that's been in the Trash
-// past its retention window. Runs once per page load rather than on a
-// server timer, since this is a static site with no backend cron — close
-// enough for a hobby app, and harmless if it finds nothing to do.
-async function purgeExpiredTrash() {
-  const cutoff = new Date(Date.now() - TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const expired = _trashedBookings.filter(b => b.deletedAt && b.deletedAt < cutoff);
-  if (!expired.length) return;
-  await sb.from('bookings').delete().lt('deleted_at', cutoff);
-  const expiredIds = new Set(expired.map(b => b._dbId));
-  _trashedBookings = _trashedBookings.filter(b => !expiredIds.has(b._dbId));
-}
 
 // Insert or update one booking row (update when `b._dbId` is set, insert
 // otherwise); also keeps the in-memory cache's copy of the row in sync.
@@ -294,6 +406,24 @@ async function upsertBooking(b, month) {
   const { data, error } = await sb.from('bookings').upsert(bookingToRow(b, month)).select().single();
   if (error) throw error;
   return rowToBooking(data);
+}
+
+// ---------- Excel library, loaded only when needed ----------
+// ~280 KB, used only for Import/Export, so it's fetched the first time one of
+// those is used instead of on every visit to Bookings/Settings.
+let _xlsxPromise = null;
+function loadXlsx() {
+  if (typeof XLSX !== 'undefined') return Promise.resolve();
+  if (!_xlsxPromise) {
+    _xlsxPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'xlsx.mini.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => { _xlsxPromise = null; s.remove(); reject(new Error('xlsx failed to load')); };
+      document.head.appendChild(s);
+    });
+  }
+  return _xlsxPromise;
 }
 
 // ---------- Excel bookings import ----------
@@ -384,7 +514,7 @@ function parseBookingSheet(sheet) {
 // show the user what's about to happen (how many bookings, which months)
 // and let them back out before anything is actually written.
 async function parseExcelBookingsFile(file) {
-  if (typeof XLSX === 'undefined') throw new Error('Excel import isn’t available right now — the xlsx library failed to load.');
+  try { await loadXlsx(); } catch (e) { throw new Error('Excel import isn’t available right now — the xlsx library failed to load.'); }
 
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array', cellDates: true });
@@ -507,7 +637,8 @@ async function replaceAllData({ bookings, customHosts, hiddenHostKeys }) {
     hiddenRows.length ? sb.from('hidden_hosts').insert(hiddenRows) : Promise.resolve(),
   ]);
 
-  await initAppData();
+  await fetchAppData();
+  saveDataCache();
 }
 
 // ---------- Host grouping (shared: Host page + Finances dashboard) ----------

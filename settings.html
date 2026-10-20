@@ -92,7 +92,6 @@
             Import backup (.json)
             <input type="file" id="importDataInput" accept=".json,application/json" hidden>
           </label>
-          <button type="button" class="btn-secondary btn-danger" id="resetDataBtn">Reset to sample data</button>
         </div>
         <div class="settings-note" id="dataNote"></div>
       </div>
@@ -103,11 +102,11 @@
           <h2 class="settings-card-title">Trash</h2>
           <span class="trash-count" id="trashCount"></span>
         </div>
-        <p class="settings-card-desc">Bookings you delete on the Bookings page wait here for 30 days. Restore one to put it back, or delete it forever.</p>
+        <p class="settings-card-desc">Bookings you delete on the Bookings page stay here until you decide: restore one to put it back, or delete it forever. Nothing is removed automatically.</p>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>ID</th><th>Guest</th><th>Apartment</th><th>Check-in</th><th>Auto-delete in</th><th></th></tr>
+              <tr><th>ID</th><th>Guest</th><th>Apartment</th><th>Check-in</th><th>Moved to Trash</th><th></th></tr>
             </thead>
             <tbody id="trashTableBody"></tbody>
           </table>
@@ -118,17 +117,19 @@
       <div class="card settings-card settings-card-wide">
         <h2 class="settings-card-title">Start fresh</h2>
         <p class="settings-card-desc">
-          Clear out old bookings so you can start working from a clean month. A backup file
-          downloads first, then every booking that checks in before the month you pick is
-          deleted permanently — it does not go to the Trash and cannot be undone here. Keep the
-          backup file somewhere safe; it's the only copy of those bookings afterwards.
+          Give the dashboard a clean start from the month you pick. Older bookings are only
+          hidden from the dashboard — nothing is deleted. They stay saved, still show on the
+          Bookings and Hosts pages, and you can put them back on the dashboard any time.
         </p>
         <div class="form-actions-inline">
-          <label class="fresh-label" for="freshCutoff">Delete bookings before</label>
-          <select class="export-month-select" id="freshCutoff" aria-label="Delete bookings that check in before this month"></select>
-          <button type="button" class="btn-secondary btn-danger" id="freshBtn">Back up &amp; delete permanently</button>
+          <label class="fresh-label" for="freshCutoff">Start the dashboard from</label>
+          <select class="export-month-select" id="freshCutoff" aria-label="Start the dashboard from this month"></select>
+          <button type="button" class="btn-secondary" id="freshBtn">Start fresh</button>
         </div>
         <p class="settings-card-desc" id="freshCount"></p>
+        <div class="form-actions-inline" id="freshShowAllRow" hidden>
+          <button type="button" class="btn-secondary" id="freshShowAllBtn">Show all bookings on the dashboard again</button>
+        </div>
         <div class="settings-note" id="freshNote"></div>
       </div>
 
@@ -145,12 +146,11 @@
 <script src="tabbar.js?v=1"></script>
 
 
-<script src="xlsx.mini.min.js"></script>
 <script src="supabase.min.js"></script>
 <script src="supabaseClient.js?v=2"></script>
-<script src="data.js?v=4"></script>
-<script src="auth.js?v=2"></script>
+<script src="data.js?v=7"></script>
+<script src="auth.js?v=3"></script>
 <script src="shell.js?v=1"></script>
-<script src="settings.js?v=5"></script>
+<script src="settings.js?v=9"></script>
 </body>
 </html>

@@ -45,6 +45,7 @@ const signOutLink = document.getElementById('signOutLink');
 if (signOutLink) {
   signOutLink.addEventListener('click', async (e) => {
     e.preventDefault();
+    if (typeof clearDataCache === 'function') clearDataCache();
     await sb.auth.signOut();
     location.href = 'login.html';
   });

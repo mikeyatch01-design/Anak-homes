@@ -18,7 +18,8 @@ const session = await requireSession();
 if (!session) return; // requireSession() is already redirecting to login.html
 await initAppData();
 
-const liveData = loadBookings();
+// After "Start fresh", months before the chosen one are left out here (they stay saved).
+const liveData = dashboardBookings(loadBookings(), dashboardStartMonth(session));
 
 // The dashboard shows one month at a time — or "All months" together —
 // picked in the header (and remembered). Every calendar month from the

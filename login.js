@@ -12,6 +12,9 @@ function getNextPage() {
 
 const nextPage = getNextPage();
 
+// Signed out or signing in fresh: drop any bookings this tab kept between pages.
+try { sessionStorage.removeItem('anak-data-v1'); } catch (e) {}
+
 // The background starts as a tiny inlined blurred placeholder (instant,
 // no request) and swaps to the real photo once it's actually downloaded.
 // Phones get a smaller copy; bigger screens get the 4K one.

@@ -160,8 +160,10 @@
   populateExportMonthSelect();
 
   if (exportExcelBtn) {
-    exportExcelBtn.addEventListener('click', () => {
-      if (typeof XLSX === 'undefined') {
+    // start fetching the Excel library as soon as a finger/mouse lands on the button
+    ['pointerdown', 'focus'].forEach(ev => exportExcelBtn.addEventListener(ev, () => { loadXlsx().catch(() => {}); }));
+    exportExcelBtn.addEventListener('click', async () => {
+      try { await loadXlsx(); } catch (e) {
         showDataNote('Excel export isn’t available right now — the xlsx library failed to load.', true);
         return;
       }
@@ -252,7 +254,7 @@
             hiddenHostKeys: Array.isArray(parsed.hiddenHostKeys) ? parsed.hiddenHostKeys : [],
           });
           showDataNote('Backup imported — reloading…', false);
-          setTimeout(() => location.reload(), 700);
+          setTimeout(() => { clearDataCache(); location.reload(); }, 700);
         } catch (err) {
           console.error('replaceAllData (import) failed:', err);
           showDataNote('Import failed: ' + (err && err.message ? err.message : err), true);
@@ -274,7 +276,7 @@
           hiddenHostKeys: [],
         });
         showDataNote('Reset — reloading…', false);
-        setTimeout(() => location.reload(), 700);
+        setTimeout(() => { clearDataCache(); location.reload(); }, 700);
       } catch (err) {
         console.error('replaceAllData (reset) failed:', err);
         showDataNote('Reset failed: ' + (err && err.message ? err.message : err), true);
@@ -296,14 +298,13 @@
       return;
     }
     trashTableBody.innerHTML = trashed.map(b => {
-      const days = trashDaysLeft(b.deletedAt);
       return `
       <tr>
         <td>${escapeHtml(b.id)}</td>
         <td><span class="mini-avatar">${escapeHtml(initials(b.guest))}</span>${escapeHtml(b.guest)}</td>
         <td>${escapeHtml(b.apartment) || '—'}</td>
         <td>${formatDisplayDate(b.checkin)}</td>
-        <td>${days} day${days === 1 ? '' : 's'}</td>
+        <td>${b.deletedAt ? formatDisplayDate(b.deletedAt.slice(0, 10)) : '—'}</td>
         <td class="row-actions">
           <button type="button" class="btn-secondary trash-restore-btn" data-dbid="${escapeHtml(b._dbId)}">Restore</button>
           <button type="button" class="row-delete-btn trash-forever-btn" data-dbid="${escapeHtml(b._dbId)}" title="Delete forever" aria-label="Delete ${escapeHtml(b.guest)} forever">${TRASH_ICON}</button>
@@ -345,29 +346,51 @@
     renderTrash();
   }
 
-  // ===== Start fresh: permanently delete every booking before a chosen month =====
-  // Bookings are filed by check-in month, so "before October" means every
-  // booking whose check-in month is earlier than October. A backup file
-  // downloads first — the deletion itself skips the Trash and can't be undone.
+  // ===== Start fresh: hide older bookings from the dashboard (never deletes) =====
+  // Bookings are filed by check-in month, so "from October" means the dashboard
+  // counts bookings whose check-in month is October or later. Nothing is removed
+  // from the database; "Show all" puts the older months back.
   const freshCutoff = document.getElementById('freshCutoff');
   const freshBtn = document.getElementById('freshBtn');
   const freshCount = document.getElementById('freshCount');
   const freshNote = document.getElementById('freshNote');
+  const freshShowAllRow = document.getElementById('freshShowAllRow');
+  const freshShowAllBtn = document.getElementById('freshShowAllBtn');
+  let dashFrom = dashboardStartMonth(session);
 
   function bookingsBefore(cutoff) {
     return Object.keys(loadBookings())
       .filter(k => k < cutoff)
       .flatMap(k => loadBookings()[k]);
   }
+  const plural = (n) => `${n} booking${n === 1 ? '' : 's'}`;
 
   function refreshFreshCount() {
     if (!freshCutoff) return;
-    const rows = bookingsBefore(freshCutoff.value);
-    const months = [...new Set(Object.keys(loadBookings()).filter(k => k < freshCutoff.value && loadBookings()[k].length))].sort();
-    freshCount.textContent = rows.length
-      ? `This will permanently delete ${rows.length} booking${rows.length === 1 ? '' : 's'} (${monthLabel(months[0])} – ${monthLabel(months[months.length - 1])}).`
-      : 'There are no bookings before that month.';
-    freshBtn.disabled = !rows.length;
+    const hiddenNow = dashFrom ? bookingsBefore(dashFrom).length : 0;
+    const wouldHide = bookingsBefore(freshCutoff.value).length;
+    freshCount.textContent = dashFrom
+      ? `The dashboard now starts from ${monthLabel(dashFrom)} · ${plural(hiddenNow)} from earlier months are hidden there (still saved).`
+      : (wouldHide ? `Starting from ${monthLabel(freshCutoff.value)} hides ${plural(wouldHide)} from the dashboard. Nothing is deleted.` : 'The dashboard shows every booking.');
+    freshBtn.disabled = freshCutoff.value === dashFrom;
+    freshShowAllRow.style.display = dashFrom ? '' : 'none'; // [hidden] loses to the row's display:flex
+  }
+
+  async function saveFrom(month, doneText) {
+    freshBtn.disabled = true; freshCutoff.disabled = true; freshShowAllBtn.disabled = true;
+    freshNote.className = 'settings-note';
+    freshNote.textContent = 'Saving…';
+    try {
+      await setDashboardStartMonth(month);
+      dashFrom = month;
+      freshNote.textContent = doneText;
+    } catch (err) {
+      console.error('dashboard start month', err);
+      freshNote.className = 'settings-note error';
+      freshNote.textContent = 'Couldn’t save that — check your connection and try again.';
+    }
+    freshCutoff.disabled = false; freshShowAllBtn.disabled = false;
+    refreshFreshCount();
   }
 
   if (freshCutoff && freshBtn) {
@@ -380,37 +403,16 @@
       options.push(`<option value="${k}">${monthLabel(k)}</option>`);
     }
     freshCutoff.innerHTML = options.join('');
-    freshCutoff.value = todayMonthKey();
+    freshCutoff.value = dashFrom && options.some(o => o.includes(`"${dashFrom}"`)) ? dashFrom : todayMonthKey();
     freshCutoff.addEventListener('change', refreshFreshCount);
     refreshFreshCount();
 
-    freshBtn.addEventListener('click', async () => {
-      const rows = bookingsBefore(freshCutoff.value);
-      if (!rows.length) return;
-      const ok = confirm(`Permanently delete ${rows.length} booking${rows.length === 1 ? '' : 's'} that check in before ${monthLabel(freshCutoff.value)}?\n\nA backup file downloads first. They will NOT go to the Trash and this cannot be undone.`);
-      if (!ok) return;
-
-      if (exportDataBtn) exportDataBtn.click(); // backup first
-      freshBtn.disabled = true;
-      freshCutoff.disabled = true;
-      let done = 0, failed = 0;
-      for (const b of rows) {
-        try {
-          await deleteBookingForeverRemote(b._dbId);
-          done++;
-        } catch (err) {
-          console.error('trash failed for', b.id, err);
-          failed++;
-        }
-        freshNote.className = 'settings-note';
-        freshNote.textContent = `Deleting… ${done + failed} of ${rows.length}`;
-      }
-      freshNote.className = 'settings-note' + (failed ? ' error' : '');
-      freshNote.textContent = failed
-        ? `Deleted ${done}, but ${failed} could not be deleted — check your connection and press the button again.`
-        : `Done — ${done} booking${done === 1 ? '' : 's'} permanently deleted. Reloading…`;
-      if (!failed) setTimeout(() => location.reload(), 1500);
-      else { freshBtn.disabled = false; freshCutoff.disabled = false; }
+    freshBtn.addEventListener('click', () => {
+      const month = freshCutoff.value;
+      saveFrom(month, `Done — the dashboard now starts from ${monthLabel(month)}. All bookings are still saved.`);
+    });
+    freshShowAllBtn.addEventListener('click', () => {
+      saveFrom(null, 'Done — every booking is back on the dashboard.');
     });
   }
 })();

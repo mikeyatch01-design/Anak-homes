@@ -478,6 +478,8 @@
   // Month is always read from each row's own Check-in date — never typed
   // or chosen here — so it can't end up filed under the wrong month.
   const importBookingsInput = document.getElementById('importBookingsInput');
+  // fetch the Excel library while the file picker is open
+  if (importBookingsInput) importBookingsInput.addEventListener('click', () => { loadXlsx().catch(() => {}); });
   const importNote = document.getElementById('importNote');
 
   function showImportNote(message, isError) {
@@ -561,7 +563,7 @@
       if (deleteBtn) {
         const booking = monthBookings(currentMonth).find(b => b.id === deleteBtn.dataset.id);
         if (!booking) return;
-        if (!confirm(`Move booking ${booking.id} (${booking.guest}) to Trash?\n\nYou can restore it from Settings → Trash for 30 days.`)) return;
+        if (!confirm(`Move booking ${booking.id} (${booking.guest}) to Trash?\n\nYou can restore it any time from Settings → Trash.`)) return;
 
         deleteBtn.disabled = true;
         try {
