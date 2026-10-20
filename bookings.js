@@ -102,9 +102,9 @@
         <td>${formatDisplayDate(b.checkin)}</td>
         <td>${formatDisplayDate(b.checkout)}</td>
         <td>${formatTZS(b.total)}</td>
-        <td>${formatTZS(b.hostShare)}</td>
-        <td>${formatTZS(b.commission)}</td>
         <td>${formatTZS(b.amountPaid)}</td>
+        <td>${formatTZS(b.commission)}</td>
+        <td>${formatTZS(b.hostShare)}</td>
         <td class="${b.remaining > 0 ? 'amount-owed' : ''}">${formatTZS(b.remaining)}</td>
         <td>${escapeHtml(formatHostPaid(b.hostPaid))}</td>
         <td>${statusPill(computeBookingStatus(b, today))}</td>
@@ -163,9 +163,9 @@
       </div>
       <div class="totals-grid">
         ${chip('c-total', ICONS.receipt, 'Total price', formatTZS(sum('total')))}
-        ${chip('c-host', ICONS.home, 'Host share', formatTZS(sum('hostShare')))}
-        ${chip('c-commission', ICONS.briefcase, 'Commission', formatTZS(sum('commission')))}
         ${chip('c-paid', ICONS.check, 'Amount paid', formatTZS(sum('amountPaid')))}
+        ${chip('c-commission', ICONS.briefcase, 'Commission', formatTZS(sum('commission')))}
+        ${chip('c-host', ICONS.home, 'Host share', formatTZS(sum('hostShare')))}
         ${chip('c-remaining', remainingTotal > 0 ? ICONS.alert : ICONS.clock, 'Remaining', formatTZS(remainingTotal), remainingTotal > 0)}
         ${chip('c-hostpaid', ICONS.handshake, 'Host paid', formatTZS(hostPaidTotal))}
       </div>
