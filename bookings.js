@@ -56,7 +56,21 @@
   // the guests staying right now.
   let statusFilter = 'all';
   const statusFilters = document.getElementById('statusFilters');
-  const FILTER_LABELS = { ACTIVE: 'active', UPCOMING: 'upcoming', COMPLETED: 'completed', "DIDN'T STAY": "didn't-show-up" };
+  const FILTER_LABELS = { ACTIVE: 'active', UPCOMING: 'upcoming', COMPLETED: 'completed', "DIDN'T STAY": "didn't-show-up", UNPAID: 'unpaid' };
+  // "Unpaid" looks across every month, so nothing owed is missed because it was booked earlier.
+  const isUnpaidView = () => statusFilter === 'UNPAID';
+
+  // Every booking has its own database id; booking codes (B001…) can repeat across months.
+  function findBooking(dbId) {
+    for (const m of Object.keys(liveBookings)) {
+      const b = liveBookings[m].find(x => String(x._dbId) === String(dbId));
+      if (b) return { booking: b, month: m };
+    }
+    return null;
+  }
+  function dropBooking(dbId) {
+    Object.keys(liveBookings).forEach(m => { liveBookings[m] = liveBookings[m].filter(x => String(x._dbId) !== String(dbId)); });
+  }
 
   if (statusFilters) {
     statusFilters.addEventListener('click', (e) => {
@@ -80,15 +94,17 @@
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const rows = sortedRows(monthBookings(currentMonth))
-      .filter(b => statusFilter === 'all' || computeBookingStatus(b, today) === statusFilter);
+    const rows = isUnpaidView()
+      ? sortedRows(Object.values(liveBookings).flat().filter(bookingIsUnpaid))
+      : sortedRows(monthBookings(currentMonth))
+        .filter(b => statusFilter === 'all' || computeBookingStatus(b, today) === statusFilter);
 
-    if (tableMonthLabel) tableMonthLabel.textContent = `${monthLabel(currentMonth)} bookings`;
+    if (tableMonthLabel) tableMonthLabel.textContent = isUnpaidView() ? 'Unpaid bookings · all months' : `${monthLabel(currentMonth)} bookings`;
     renderMonthPickerButton();
     renderMonthPickerMenu();
 
     if (!rows.length) {
-      tableBody.innerHTML = `<tr><td colspan="14" class="checkin-empty">${statusFilter === 'all' ? `No bookings for ${monthLabel(currentMonth)} yet.` : `No ${FILTER_LABELS[statusFilter].replace(/-/g, ' ')} bookings in ${monthLabel(currentMonth)}.`}</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="14" class="checkin-empty">${isUnpaidView() ? 'Everything is paid: every guest has paid in full and every host has been paid.' : statusFilter === 'all' ? `No bookings for ${monthLabel(currentMonth)} yet.` : `No ${FILTER_LABELS[statusFilter].replace(/-/g, ' ')} bookings in ${monthLabel(currentMonth)}.`}</td></tr>`;
       renderTotalsPanel(rows);
       return;
     }
@@ -106,13 +122,13 @@
         <td>${formatTZS(b.commission)}</td>
         <td>${formatTZS(b.hostShare)}</td>
         <td class="${b.remaining > 0 ? 'amount-owed' : ''}">${formatTZS(b.remaining)}</td>
-        <td>${escapeHtml(formatHostPaid(b.hostPaid))}</td>
+        <td class="${isUnpaidView() && hostOwed(b) > 0 ? 'amount-owed' : ''}">${escapeHtml(formatHostPaid(b.hostPaid))}${isUnpaidView() && hostOwed(b) > 0 ? `<br><small>Host still owed ${formatTZS(hostOwed(b))}</small>` : ''}</td>
         <td>${statusPill(computeBookingStatus(b, today))}</td>
         <td class="row-actions">
-          <button type="button" class="row-edit-btn" data-id="${escapeHtml(b.id)}" title="Edit booking" aria-label="Edit booking">
+          <button type="button" class="row-edit-btn" data-dbid="${escapeHtml(b._dbId)}" title="Edit booking" aria-label="Edit booking">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 0 1 4 4L7 21l-4 1 1-4Z"/><path d="m14.5 5.5 4 4"/></svg>
           </button>
-          <button type="button" class="row-delete-btn" data-id="${escapeHtml(b.id)}" title="Delete booking" aria-label="Delete booking">
+          <button type="button" class="row-delete-btn" data-dbid="${escapeHtml(b._dbId)}" title="Delete booking" aria-label="Delete booking">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6M14 11v6"/></svg>
           </button>
         </td>
@@ -158,7 +174,7 @@
 
     panel.innerHTML = `
       <div class="totals-panel-header">
-        <span class="totals-panel-title">Totals — ${statusFilter === 'all' ? '' : FILTER_LABELS[statusFilter].replace(/-/g, ' ').replace(/^./, c => c.toUpperCase()) + ', '}${monthLabel(currentMonth)}</span>
+        <span class="totals-panel-title">Totals — ${isUnpaidView() ? 'Unpaid, all months' : (statusFilter === 'all' ? '' : FILTER_LABELS[statusFilter].replace(/-/g, ' ').replace(/^./, c => c.toUpperCase()) + ', ') + monthLabel(currentMonth)}</span>
         <span class="totals-panel-sub">${rows.length} booking${rows.length === 1 ? '' : 's'}${owedCount ? ` · ${owedCount} not fully paid` : ''}</span>
       </div>
       <div class="totals-grid">
@@ -554,21 +570,22 @@
     tableBody.addEventListener('click', async (e) => {
       const editBtn = e.target.closest('.row-edit-btn');
       if (editBtn) {
-        const booking = monthBookings(currentMonth).find(b => b.id === editBtn.dataset.id);
-        if (booking) openModal(booking);
+        const found = findBooking(editBtn.dataset.dbid);
+        if (found) openModal(found.booking);
         return;
       }
 
       const deleteBtn = e.target.closest('.row-delete-btn');
       if (deleteBtn) {
-        const booking = monthBookings(currentMonth).find(b => b.id === deleteBtn.dataset.id);
-        if (!booking) return;
+        const found = findBooking(deleteBtn.dataset.dbid);
+        if (!found) return;
+        const booking = found.booking;
         if (!confirm(`Move booking ${booking.id} (${booking.guest}) to Trash?\n\nYou can restore it any time from Settings → Trash.`)) return;
 
         deleteBtn.disabled = true;
         try {
           await trashBookingRemote(booking._dbId);
-          liveBookings[currentMonth] = (liveBookings[currentMonth] || []).filter(b => b.id !== booking.id);
+          dropBooking(booking._dbId);
           renderBookings();
         } catch (err) {
           console.error('trashBookingRemote failed:', err);
@@ -600,7 +617,7 @@
       };
       if (editingDbId) fields._dbId = editingDbId;
 
-      // The month bucket is always derived from check-in — never chosen by
+      // The month is always derived from the booking date — never chosen by
       // hand — so a booking can't end up filed under the wrong month.
       const targetMonth = bookingMonthKey(fields) || currentMonth;
 
@@ -609,9 +626,7 @@
         const saved = await upsertBooking(fields, targetMonth);
         rememberApartment(fields.apartment);
 
-        if (editingId != null && editingMonth) {
-          liveBookings[editingMonth] = (liveBookings[editingMonth] || []).filter(b => b.id !== editingId);
-        }
+        if (editingDbId) dropBooking(editingDbId);
         liveBookings[targetMonth] = liveBookings[targetMonth] || [];
         liveBookings[targetMonth].push(saved);
 

@@ -430,7 +430,7 @@ function renderReport() {
   const counts = { UPCOMING: 0, ACTIVE: 0, COMPLETED: 0, "DIDN'T STAY": 0 };
   const rows = monthRows(CURRENT_MONTH);
   rows.forEach(b => { counts[computeBookingStatus(b, today)]++; });
-  const removed = loadTrashedBookings().filter(b => CURRENT_MONTH === ALL || b._monthKey === CURRENT_MONTH).length;
+  const removed = loadTrashedBookings().filter(b => CURRENT_MONTH === ALL || (bookingMonthKey(b) || b._monthKey) === CURRENT_MONTH).length;
   el('reportMonth').textContent = CURRENT_LABEL;
   el('repTotal').textContent = rows.length;
   el('repUpcoming').textContent = counts.UPCOMING;

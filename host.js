@@ -207,7 +207,7 @@
   function hostCheckinsByDay(hostKey, monthKey) {
     const byDay = {};
     allBookings(liveData).forEach(b => {
-      if (!b.checkin || bookingMonthKey(b) !== monthKey) return;
+      if (!b.checkin || b.checkin.slice(0, 7) !== monthKey) return; // a check-in calendar: by check-in date
       if (normalizeApartment(b.apartment) !== hostKey) return;
       const day = Number(b.checkin.slice(8, 10));
       (byDay[day] = byDay[day] || []).push(b.guest);

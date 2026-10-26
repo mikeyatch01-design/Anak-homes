@@ -131,11 +131,26 @@ function monthShortLabel(key) {
   return MONTHS_FULL[month - 1].slice(0, 3).toUpperCase();
 }
 
-// Which month bucket a booking belongs in — always derived from its
-// check-in date, never chosen by hand, so it can't drift out of sync.
+// Which month a booking belongs to: the month it was BOOKED (its income and
+// commission count there), not the month the guest checks in. Older rows
+// without a booking date fall back to check-in. Always derived, never chosen
+// by hand, so it can't drift out of sync.
 function bookingMonthKey(booking) {
-  return booking.checkin ? booking.checkin.slice(0, 7) : null;
+  const d = booking.dateBooked || booking.checkin;
+  return d ? d.slice(0, 7) : null;
 }
+
+// What is still owed on a booking: by the guest (price not fully paid) and to
+// the host (their share not fully sent). A no-show owes nothing.
+function guestOwes(b) {
+  if (b.status === "DIDN'T STAY") return 0;
+  return Math.max(Number(b.remaining) || 0, (Number(b.total) || 0) - (Number(b.amountPaid) || 0), 0);
+}
+function hostOwed(b) {
+  if (b.status === "DIDN'T STAY") return 0;
+  return Math.max((Number(b.hostShare) || 0) - parseHostPaid(b.hostPaid), 0);
+}
+function bookingIsUnpaid(b) { return guestOwes(b) > 0 || hostOwed(b) > 0; }
 
 const STATUS_META = {
   'COMPLETED':   { label: 'Completed',   cls: 'delivered' },
@@ -333,8 +348,9 @@ function buildAppData({ bookingsRes, hostsRes, hiddenRes }) {
   const bookings = {}, trash = [];
   (bookingsRes.data || []).forEach(row => {
     const b = rowToBooking(row);
+    const m = bookingMonthKey(b) || row.month_key;
     if (row.deleted_at) trash.push(b);
-    else (bookings[row.month_key] = bookings[row.month_key] || []).push(b);
+    else (bookings[m] = bookings[m] || []).push(b);
   });
   Object.keys(bookings).forEach(m => bookings[m].sort((a, b) => (a.checkin || '').localeCompare(b.checkin || '')));
   trash.sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''));
@@ -358,10 +374,11 @@ async function fetchAppData() {
   _trashedBookings = [];
   (bookingsRes.data || []).forEach(row => {
     const b = rowToBooking(row);
+    const m = bookingMonthKey(b) || row.month_key;
     if (row.deleted_at) {
       _trashedBookings.push(b);
     } else {
-      (_bookingsData[row.month_key] = _bookingsData[row.month_key] || []).push(b);
+      (_bookingsData[m] = _bookingsData[m] || []).push(b);
     }
   });
   Object.keys(_bookingsData).forEach(month => {
@@ -583,7 +600,8 @@ async function restoreBookingRemote(dbId) {
   if (error) throw error;
   const b = rowToBooking(data);
   _trashedBookings = _trashedBookings.filter(t => t._dbId !== dbId);
-  (_bookingsData[b._monthKey] = _bookingsData[b._monthKey] || []).push(b);
+  const m = bookingMonthKey(b) || b._monthKey;
+  (_bookingsData[m] = _bookingsData[m] || []).push(b);
   return b;
 }
 
