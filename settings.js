@@ -26,6 +26,49 @@
     document.addEventListener('themeprefchange', refreshThemeOptions);
   }
 
+  // ===== Phone notifications =====
+  const pushStatus = document.getElementById('pushStatus');
+  const pushHint = document.getElementById('pushHint');
+  const pushError = document.getElementById('pushError');
+  const pushEnableBtn = document.getElementById('pushEnableBtn');
+  const pushTestBtn = document.getElementById('pushTestBtn');
+  const pushDisableBtn = document.getElementById('pushDisableBtn');
+  const show = (node, on) => { if (node) node.style.display = on ? '' : 'none'; };
+
+  async function refreshPushCard() {
+    if (!pushStatus) return;
+    pushError.textContent = '';
+    if (!pushSupported()) {
+      const ios = isIosDevice() && !isInstalledApp();
+      pushStatus.textContent = 'Not available'; pushStatus.classList.remove('on');
+      pushHint.textContent = ios
+        ? 'On iPhone, first add Anak Homes to your Home Screen: tap the Share button, then “Add to Home Screen”. Open Anak Homes from the new icon and come back here.'
+        : 'This browser can’t show notifications. Try Chrome, Safari or Edge.';
+      show(pushHint, true); show(pushEnableBtn, false); show(pushTestBtn, false); show(pushDisableBtn, false);
+      return;
+    }
+    const on = !!(await currentPushSubscription()) && Notification.permission === 'granted';
+    pushStatus.textContent = on ? 'On for this device' : 'Off';
+    pushStatus.classList.toggle('on', on);
+    show(pushHint, false);
+    show(pushEnableBtn, !on); show(pushTestBtn, on); show(pushDisableBtn, on);
+  }
+
+  async function pushAction(btn, fn, okText) {
+    btn.disabled = true; pushError.textContent = '';
+    try { await fn(); if (okText) { pushHint.textContent = okText; show(pushHint, true); } }
+    catch (err) { console.error(err); pushError.textContent = (err && err.message) || 'Something went wrong. Please try again.'; }
+    finally { btn.disabled = false; await refreshPushCard(); if (okText && !pushError.textContent) show(pushHint, true); }
+  }
+
+  if (pushEnableBtn) pushEnableBtn.addEventListener('click', () => pushAction(pushEnableBtn, enablePush, 'Done. You’ll get a notification here for every new booking.'));
+  if (pushDisableBtn) pushDisableBtn.addEventListener('click', () => pushAction(pushDisableBtn, disablePush, 'Turned off for this device.'));
+  if (pushTestBtn) pushTestBtn.addEventListener('click', () => pushAction(pushTestBtn, async () => {
+    const r = await sendTestPush();
+    if (!r || !r.sent) throw new Error('No device received it. Turn notifications off and on again on this device.');
+  }, 'Test sent. It should appear in a few seconds.'));
+  refreshPushCard();
+
   // ===== Security (real account, via Supabase Auth) =====
   const securityEmail = document.getElementById('securityEmail');
   if (securityEmail) securityEmail.textContent = session.user.email || '—';

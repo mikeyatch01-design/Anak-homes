@@ -57,3 +57,18 @@ create policy "owns hidden_hosts"  on hidden_hosts  for all using (auth.uid() = 
 -- now a fixed "Anak" in script.js) — if you ran the old version of this
 -- file, the unused `profile` table can be dropped with:
 --   drop table if exists profile;
+
+-- Phone notifications: one row per device that turned them on (Settings →
+-- Phone notifications). Added 2026-10-26; safe to run on an existing database.
+create table if not exists push_subscriptions (
+  id          bigint generated always as identity primary key,
+  endpoint    text not null unique,
+  p256dh      text not null,
+  auth        text not null,
+  device      text not null default '',
+  created_at  timestamptz not null default now(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade
+);
+alter table push_subscriptions enable row level security;
+drop policy if exists "owns push_subscriptions" on push_subscriptions;
+create policy "owns push_subscriptions" on push_subscriptions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

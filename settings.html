@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Anak Homes">
 <title>Anak Homes — Settings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,6 +78,25 @@
             <button type="submit" class="btn-primary" id="passwordSubmitBtn">Change password</button>
           </div>
         </form>
+      </div>
+
+      <!-- Phone notifications -->
+      <div class="card settings-card settings-card-wide">
+        <div class="settings-card-header">
+          <h2 class="settings-card-title">Phone notifications</h2>
+          <span class="security-status" id="pushStatus">Off</span>
+        </div>
+        <p class="settings-card-desc">
+          Get a notification on this device every time a new booking is added, whether you add it
+          on your phone or your laptop. Turn it on separately on each device you want notified.
+        </p>
+        <p class="settings-card-desc" id="pushHint" style="display:none"></p>
+        <div class="security-error" id="pushError"></div>
+        <div class="form-actions-inline">
+          <button type="button" class="btn-primary" id="pushEnableBtn">Turn on notifications</button>
+          <button type="button" class="btn-secondary" id="pushTestBtn" style="display:none">Send a test</button>
+          <button type="button" class="btn-secondary" id="pushDisableBtn" style="display:none">Turn off on this device</button>
+        </div>
       </div>
 
       <!-- Data -->
@@ -151,6 +175,7 @@
 <script src="data.js?v=8"></script>
 <script src="auth.js?v=3"></script>
 <script src="shell.js?v=1"></script>
-<script src="settings.js?v=9"></script>
+<script src="push.js?v=1"></script>
+<script src="settings.js?v=10"></script>
 </body>
 </html>

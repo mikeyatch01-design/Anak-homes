@@ -616,6 +616,7 @@
         status: fNoShow.checked ? "DIDN'T STAY" : '',
       };
       if (editingDbId) fields._dbId = editingDbId;
+      const isNewBooking = !editingDbId;
 
       // The month is always derived from the booking date — never chosen by
       // hand — so a booking can't end up filed under the wrong month.
@@ -624,6 +625,7 @@
       if (modalSubmitBtn) modalSubmitBtn.disabled = true;
       try {
         const saved = await upsertBooking(fields, targetMonth);
+        if (isNewBooking) notifyNewBooking(saved._dbId); // phone notification; never blocks saving
         rememberApartment(fields.apartment);
 
         if (editingDbId) dropBooking(editingDbId);
