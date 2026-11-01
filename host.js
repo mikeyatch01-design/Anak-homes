@@ -15,9 +15,8 @@
   // Cycled through for new custom hosts so they don't all look identical.
   const NEW_HOST_ICONS = ['🏡', '🏛️', '🏬', '🌇', '🏝️', '🏦', '🏰', '🗼'];
 
-  // The latest month that has bookings — what "busy this month" means here.
-  const monthKeysAll = monthKeysOf(liveData);
-  const LATEST_MONTH = monthKeysAll[monthKeysAll.length - 1];
+  // "This month" is the current calendar month (bookings count in the month they were booked).
+  const LATEST_MONTH = todayMonthKey();
 
   function computeHostStats() {
     const stats = {};

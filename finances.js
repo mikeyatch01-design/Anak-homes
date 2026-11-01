@@ -24,8 +24,9 @@ const liveData = dashboardBookings(loadBookings(), dashboardStartMonth(session))
 // The dashboard shows one month at a time — or "All months" together —
 // picked in the header (and remembered). Every calendar month from the
 // first booking up to today can be picked, even ones with no bookings.
-// By default it's the most recent month that has bookings. "Previous" is
-// the calendar month before the one being viewed.
+// By default it's the current calendar month. A month picked by hand is
+// remembered only until the calendar moves on, so on the 1st of a new month
+// the dashboard opens on that month. "Previous" is the month before the one viewed.
 const dataMonthKeys = monthKeysOf(liveData);
 const MONTH_KEY_STORE = 'anak-dashboard-month';
 const ALL = 'all';
@@ -43,7 +44,7 @@ function setMonth(key) {
     CURRENT_LABEL = 'All months';
     return;
   }
-  CURRENT_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/.test(key || '') ? key : dataMonthKeys[dataMonthKeys.length - 1];
+  CURRENT_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/.test(key || '') ? key : todayMonthKey();
   PREVIOUS_MONTH = CURRENT_MONTH ? shiftMonth(CURRENT_MONTH, -1) : undefined;
   CURRENT_LABEL = CURRENT_MONTH ? monthLabel(CURRENT_MONTH) : 'No bookings yet';
 }
@@ -54,7 +55,10 @@ function monthsUpToCurrent() {
   return dataMonthKeys.filter(k => k <= CURRENT_MONTH);
 }
 let storedMonth = null;
-try { storedMonth = localStorage.getItem(MONTH_KEY_STORE); } catch (e) {}
+try {
+  const saved = JSON.parse(localStorage.getItem(MONTH_KEY_STORE) || 'null');
+  if (saved && saved.at === todayMonthKey()) storedMonth = saved.m; // picked this calendar month
+} catch (e) {}
 setMonth(storedMonth);
 
 const el = (id) => document.getElementById(id);
@@ -521,7 +525,7 @@ const monthPicker = createMonthPicker(el('monthPicker'), {
   hasData: (key) => !!(liveData[key] || []).length,
   onSelect: (key) => {
     setMonth(key);
-    try { localStorage.setItem(MONTH_KEY_STORE, CURRENT_MONTH); } catch (e) {}
+    try { localStorage.setItem(MONTH_KEY_STORE, JSON.stringify({ m: CURRENT_MONTH, at: todayMonthKey() })); } catch (e) {}
     renderMonth();
     playIntro();
   },
