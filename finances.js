@@ -7,7 +7,8 @@
 //   Net Income       = commission earned this month
 //   Current Balance  = money actually in the account: everything guests have
 //                      paid, minus what's already been paid out to hosts
-//   Total Received   = commission + host payouts, across every month
+//   Received         = commission + host payouts in the month being viewed
+//                      (a line under it, and under Net income, gives the all-months total)
 //   Upcoming         = commission on bookings the guest hasn't fully paid
 //   Paid bookings    = guest paid the full amount (remaining === 0)
 //   Paid to Host     = host's share actually paid out this month
@@ -208,6 +209,8 @@ setInterval(renderHeader, 60000);
 function renderQuickFigures() {
   const netIncome = monthCommission(CURRENT_MONTH);
   el('netIncomeValue').innerHTML = moneyHTML(netIncome);
+  // Under it: everything earned so far, all months together.
+  el('netIncomeAll').textContent = CURRENT_MONTH === ALL ? '' : `All months: ${formatTZS(monthCommission(ALL))}`;
   setDelta(el('netIncomeDelta'), pctDelta(netIncome, monthCommission(PREVIOUS_MONTH)));
 
   // Mini bars: commission for the (up to) six months ending at this one.
@@ -226,14 +229,14 @@ function renderQuickFigures() {
   el('upcomingStatValue').innerHTML = moneyHTML(upcoming);
   setDelta(el('upcomingDelta'), pctDelta(upcoming, commissionSplit(PREVIOUS_MONTH).upcomingAmount));
 
-  // Total received = commission + host payouts, across every month up to
-  // the one being viewed.
-  let running = 0;
-  const receivedSeries = upTo.map(m => (running += monthCommission(m) + monthHostPaid(m)));
-  const receivedThisMonth = netIncome + monthHostPaid(CURRENT_MONTH);
-  el('totalReceivedValue').innerHTML = moneyHTML(running);
-  setDelta(el('totalReceivedDelta'), pctDelta(running, running - receivedThisMonth));
-  drawSquiggle('receivedSquiggle', receivedSeries);
+  // Received = commission + host payouts in the month being viewed (starts
+  // from zero each month); the all-months total sits on the line under it.
+  const received = (m) => monthCommission(m) + monthHostPaid(m);
+  el('totalReceivedLabel').textContent = CURRENT_MONTH === ALL ? 'Received, all months' : 'Received this month';
+  el('totalReceivedValue').innerHTML = moneyHTML(received(CURRENT_MONTH));
+  setDelta(el('totalReceivedDelta'), CURRENT_MONTH === ALL ? null : pctDelta(received(CURRENT_MONTH), received(PREVIOUS_MONTH)));
+  el('totalReceivedAll').textContent = CURRENT_MONTH === ALL ? '' : `All months: ${formatTZS(received(ALL))}`;
+  drawSquiggle('receivedSquiggle', upTo.map(received));
 }
 
 // ---------- Overall income (the one chart) ----------
