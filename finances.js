@@ -616,7 +616,7 @@ function playIntro() {
 
 renderMonth();
 renderBookingsFeed();
-playIntro();
+pageRevealed.then(playIntro); // count-up starts once the page is visible
 // Coming back with Back/Forward can restore the page from memory without re-running it.
 window.addEventListener('pageshow', e => { if (e.persisted) playIntro(); });
 })();

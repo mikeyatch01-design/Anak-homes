@@ -14,8 +14,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css?v=23">
+<link rel="stylesheet" href="splash.css?v=1">
+<script>try{if(sessionStorage.getItem('anak-splash-seen'))document.documentElement.classList.add('no-splash')}catch(e){}</script>
 </head>
 <body class="dash-page">
+<div class="splash" aria-hidden="true">
+  <div class="splash-glow"><svg class="splash-mark" viewBox="0 0 24 24"><defs><linearGradient id="splashGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3D9A4"/><stop offset="1" stop-color="#C98A3E"/></linearGradient></defs><path pathLength="1" d="M3 11.5 12 4l9 7.5"/><path pathLength="1" d="M5.5 10v9a1 1 0 0 0 1 1H10v-5.5h4V20h3.5a1 1 0 0 0 1-1v-9"/></svg></div>
+  <span class="splash-word">ANAK</span>
+</div>
 
 <div class="grain" aria-hidden="true"></div>
 
@@ -230,8 +236,8 @@
 <script src="supabase.min.js"></script>
 <script src="supabaseClient.js?v=2"></script>
 <script src="data.js?v=8"></script>
-<script src="auth.js?v=3"></script>
+<script src="auth.js?v=4"></script>
 <script src="monthpicker.js?v=1"></script>
-<script src="finances.js?v=23"></script>
+<script src="finances.js?v=24"></script>
 </body>
 </html>

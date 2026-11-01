@@ -11,8 +11,16 @@
 // The <head> of every protected page sets `html.auth-checking { visibility:
 // hidden }` (see style.css) so nothing flashes on screen while the session
 // check is in flight; this reveals the page once it resolves to "signed in".
+// On the first page of an app launch the opening screen (splash.css) stays up
+// long enough for the gold house to finish drawing; later pages reveal at once.
+const SPLASH_MIN_MS = 1500;
+let _revealDone;
+const pageRevealed = new Promise(resolve => { _revealDone = resolve; });
 function revealPage() {
-  document.documentElement.classList.remove('auth-checking');
+  let firstOfSession = false;
+  try { firstOfSession = !sessionStorage.getItem('anak-splash-seen'); sessionStorage.setItem('anak-splash-seen', '1'); } catch (e) {}
+  const wait = firstOfSession ? Math.max(0, SPLASH_MIN_MS - performance.now()) : 0;
+  setTimeout(() => { document.documentElement.classList.remove('auth-checking'); _revealDone(); }, wait);
 }
 
 async function requireSession() {
